@@ -264,13 +264,20 @@ async function createTransaction(
   return transaction;
 }
 
-// GET handler for webhook testing
+// GET handler for webhook testing - shows endpoint info
 export async function GET() {
   return NextResponse.json({
     success: true,
     message: "Sociabuzz webhook endpoint is active",
+    description: "This endpoint accepts POST requests from Sociabuzz webhook",
+    method: "POST",
+    content_type: "application/json",
     timestamp: new Date().toISOString(),
-    endpoint: "/api/topup/callback",
     status: "ready",
+    instructions: {
+      test_from_sociabuzz: "Use 'Test Webhook' button in Sociabuzz dashboard",
+      webhook_url: "https://analisis-sentimen-youtube.vercel.app/api/topup/callback",
+      required_fields: ["order_id", "amount", "status", "email"]
+    }
   });
 }
