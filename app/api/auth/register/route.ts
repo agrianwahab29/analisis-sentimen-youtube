@@ -41,13 +41,21 @@ export async function POST(request: Request) {
   }
 
   if (data.user) {
-    const { error: insertError } = await supabase.from("users").insert({
-      id: data.user.id,
-      email: data.user.email,
-      credit_balance: 10,
-    });
+    // Use upsert to handle orphan records gracefully
+    const { error: upsertError } = await supabase.from("users").upsert(
+      {
+        id: data.user.id,
+        email: data.user.email,
+        credit_balance: 10,
+      },
+      {
+        onConflict: "id",
+        ignoreDuplicates: false,
+      }
+    );
 
-    if (insertError) {
+    if (upsertError) {
+      console.error("Profile upsert error:", upsertError);
       const response = NextResponse.json(
         { error: "Pendaftaran berhasil, tapi gagal membuat profil pengguna." },
         { status: 500 }
