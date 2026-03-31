@@ -1,0 +1,225 @@
+import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+
+/**
+ * Sociabuzz Webhook Handler
+ * 
+ * Sociabuzz akan mengirim POST request ke endpoint ini saat ada pembayaran berhasil.
+ * 
+ * Webhook payload dari Sociabuzz:
+ * - order_id: ID transaksi Sociabuzz
+ * - amount: Jumlah pembayaran
+ * - status: status pembayaran (paid, pending, failed)
+ * - email: email pembayar
+ * - name: nama pembayar
+ * - message: pesan (bisa berisi voucher code)
+ */
+
+export async function POST(request: NextRequest) {
+  try {
+    // Verify webhook signature (optional but recommended)
+    const signature = request.headers.get("x-sociabuzz-signature");
+    
+    // Parse request body
+    const body = await request.json();
+    console.log("Sociabuzz webhook received:", body);
+
+    const {
+      order_id,
+      amount,
+      status,
+      email,
+      name,
+      message,
+      type = "qris",
+    } = body;
+
+    // Validate required fields
+    if (!order_id || !amount || !status) {
+      console.error("Invalid webhook payload:", body);
+      return NextResponse.json(
+        { error: "Invalid webhook payload" },
+        { status: 400 }
+      );
+    }
+
+    // Only process successful payments
+    if (status !== "paid" && status !== "success") {
+      console.log("Payment not successful yet:", status);
+      return NextResponse.json({ success: true, message: "Payment not successful yet" });
+    }
+
+    // Initialize Supabase client with service role
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Extract voucher code from message if exists
+    const voucherCode = extractVoucherCode(message);
+    
+    // Find transaction by voucher code or order_id
+    let transaction;
+    if (voucherCode) {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("voucher_code", voucherCode)
+        .eq("payment_status", "pending")
+        .single();
+      
+      if (error || !data) {
+        console.error("Transaction not found for voucher:", voucherCode);
+        // Create new transaction if not found
+        transaction = await createTransaction(supabase, body, voucherCode);
+      } else {
+        transaction = data;
+      }
+    } else {
+      // Find by email match (fallback)
+      const { data: user } = await supabase
+        .from("users")
+        .select("id, credit_balance")
+        .eq("email", email)
+        .single();
+      
+      if (!user) {
+        console.error("User not found for email:", email);
+        return NextResponse.json(
+          { error: "User not found" },
+          { status: 404 }
+        );
+      }
+
+      // Create transaction record
+      transaction = await createTransaction(supabase, body, null, user.id);
+    }
+
+    // Update transaction status to paid
+    const { error: updateError } = await supabase
+      .from("transactions")
+      .update({
+        payment_status: "paid",
+        paid_at: new Date().toISOString(),
+        sociabuzz_order_id: order_id,
+        sociabuzz_response: body,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", transaction.id);
+
+    if (updateError) {
+      console.error("Failed to update transaction:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update transaction" },
+        { status: 500 }
+      );
+    }
+
+    // Add credits to user
+    const { error: creditError } = await supabase.rpc("add_credits_to_user", {
+      user_uuid: transaction.user_id,
+      credits: transaction.total_credits,
+    });
+
+    if (creditError) {
+      console.error("Failed to add credits:", creditError);
+      return NextResponse.json(
+        { error: "Failed to add credits" },
+        { status: 500 }
+      );
+    }
+
+    console.log(`✅ Credits added: ${transaction.total_credits} to user ${transaction.user_id}`);
+
+    // Send success response to Sociabuzz
+    return NextResponse.json({
+      success: true,
+      message: `Payment processed successfully. ${transaction.total_credits} credits added.`,
+      transaction_id: transaction.id,
+      credits_added: transaction.total_credits,
+    });
+
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Extract voucher code from message
+ * Format: "Voucher: ABC123" or "Code: ABC123"
+ */
+function extractVoucherCode(message: string | null): string | null {
+  if (!message) return null;
+  
+  const match = message.match(/(?:Voucher|Code|Kode)[:\s]+([A-Z0-9]+)/i);
+  return match ? match[1] : null;
+}
+
+/**
+ * Create transaction record
+ */
+async function createTransaction(
+  supabase: any,
+  body: any,
+  voucherCode: string | null,
+  userId?: string
+) {
+  const { email, amount, order_id } = body;
+
+  // Find user by email if userId not provided
+  let user_id = userId;
+  if (!user_id) {
+    const { data: user } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .single();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    user_id = user.id;
+  }
+
+  // Determine package based on amount
+  const packageMap: Record<number, { package_id: string; package_name: string; credits: number; bonus: number }> = {
+    10000: { package_id: "basic", package_name: "Basic", credits: 100, bonus: 0 },
+    25000: { package_id: "standard", package_name: "Standard", credits: 300, bonus: 20 },
+    50000: { package_id: "premium", package_name: "Premium", credits: 700, bonus: 200 },
+    100000: { package_id: "enterprise", package_name: "Enterprise", credits: 1500, bonus: 500 },
+  };
+
+  const pkg = packageMap[amount] || { package_id: "custom", package_name: "Custom", credits: Math.floor(amount / 100), bonus: 0 };
+  const total_credits = pkg.credits + pkg.bonus;
+
+  // Create transaction
+  const { data: transaction, error } = await supabase
+    .from("transactions")
+    .insert({
+      user_id,
+      order_id: order_id || `SOC-${Date.now()}`,
+      package_id: pkg.package_id,
+      package_name: pkg.package_name,
+      credits_amount: pkg.credits,
+      bonus_credits: pkg.bonus,
+      total_credits,
+      price: amount,
+      payment_method: "sociabuzz",
+      payment_status: "pending",
+      voucher_code: voucherCode,
+      sociabuzz_order_id: order_id,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to create transaction:", error);
+    throw error;
+  }
+
+  return transaction;
+}
