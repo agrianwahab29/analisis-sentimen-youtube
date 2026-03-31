@@ -7,7 +7,10 @@ import { useAuth } from "@/hooks/use-auth";
 
 export function UserNav() {
   const [isOpen, setIsOpen] = useState(false);
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const email = user?.email ?? "user@email.com";
+  const initial = email.charAt(0).toUpperCase();
+  const displayName = email.split("@")[0];
 
   return (
     <div className="relative">
@@ -18,10 +21,10 @@ export function UserNav() {
         className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-slate-300 transition-colors"
       >
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700">
-          <span className="text-xs font-semibold text-white">U</span>
+          <span className="text-xs font-semibold text-white">{initial}</span>
         </div>
         <div className="hidden sm:flex flex-col items-start">
-          <span className="text-sm font-medium text-slate-900">User</span>
+          <span className="text-sm font-medium text-slate-900">{displayName}</span>
         </div>
         <ChevronDown className="h-4 w-4 text-slate-400" />
       </motion.button>
@@ -45,8 +48,8 @@ export function UserNav() {
             >
               <div className="border-b border-slate-100 pb-2 mb-2">
                 <div className="px-3 py-2">
-                  <p className="text-sm font-medium text-slate-900">User Name</p>
-                  <p className="text-xs text-slate-500">user@email.com</p>
+                  <p className="text-sm font-medium text-slate-900">{displayName}</p>
+                  <p className="text-xs text-slate-500">{email}</p>
                 </div>
               </div>
               

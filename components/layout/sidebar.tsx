@@ -28,7 +28,10 @@ const sidebarItems: SidebarItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const email = user?.email ?? "user@email.com";
+  const initial = email.charAt(0).toUpperCase();
+  const displayName = email.split("@")[0];
 
   return (
     <motion.aside
@@ -100,11 +103,11 @@ export function Sidebar() {
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-[#1E293B] hover:text-white"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-700">
-            <span className="text-xs font-semibold text-white">U</span>
+            <span className="text-xs font-semibold text-white">{initial}</span>
           </div>
           <div className="flex flex-col items-start">
-            <span className="text-sm text-white">User</span>
-            <span className="text-xs text-slate-500">user@email.com</span>
+            <span className="text-sm text-white">{displayName}</span>
+            <span className="text-xs text-slate-500">{email}</span>
           </div>
           <LogOut className="ml-auto h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
         </button>
