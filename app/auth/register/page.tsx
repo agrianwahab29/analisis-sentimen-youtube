@@ -210,11 +210,11 @@ export default function RegisterPage() {
               />
               <span className="text-sm text-slate-600">
                 Saya setuju dengan{" "}
-                <Link href="#" className="text-blue-600 hover:text-blue-700">
+                <Link href="/legal/terms" className="text-blue-600 hover:text-blue-700">
                   Syarat dan Ketentuan
                 </Link>{" "}
                 dan{" "}
-                <Link href="#" className="text-blue-600 hover:text-blue-700">
+                <Link href="/legal/privacy" className="text-blue-600 hover:text-blue-700">
                   Kebijakan Privasi
                 </Link>
               </span>
