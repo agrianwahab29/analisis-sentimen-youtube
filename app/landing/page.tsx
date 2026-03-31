@@ -333,7 +333,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
             <div className="rounded-xl border border-slate-200 bg-white p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
@@ -362,19 +362,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-                  <svg className="h-6 w-6 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0L5.464 2.626v18.748L12 24l6.536-2.626V2.626L12 0zm6.124 20.12l-5.732 2.315-5.732-2.315V3.88L12 1.565l5.732 2.315v16.24z"/>
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-slate-900">Supabase</h3>
-              </div>
-              <p className="text-sm text-slate-600">
-                Backend-as-a-Service untuk autentikasi Google OAuth dan database PostgreSQL yang aman.
-              </p>
-            </div>
           </div>
         </div>
       </section>
