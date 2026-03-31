@@ -5,12 +5,16 @@ import { motion } from "framer-motion";
 import { Sidebar } from "./sidebar";
 import { CreditBadge } from "./credit-badge";
 import { UserNav } from "./user-nav";
+import { useAuth } from "@/hooks/use-auth";
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { user } = useAuth();
+  const credits = (user as Record<string, unknown>)?.credit_balance as number ?? 0;
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Sidebar */}
@@ -28,7 +32,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <CreditBadge credits={1250} />
+            <CreditBadge credits={credits} />
             <div className="h-8 w-px bg-slate-200" />
             <UserNav />
           </div>

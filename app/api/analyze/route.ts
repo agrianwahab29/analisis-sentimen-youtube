@@ -11,6 +11,7 @@ import {
   SentimentResult 
 } from "@/lib/services/huggingface";
 import { generateAIInsight } from "@/lib/services/openrouter";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,6 +95,42 @@ export async function POST(request: NextRequest) {
         analyzedComments,
         openRouterKey
       );
+    }
+
+    // Save to database
+    try {
+      const { supabase } = await createSupabaseRouteHandlerClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Save analysis history
+        await supabase.from("analysis_history").insert({
+          user_id: user.id,
+          video_url: url,
+          video_title: videoInfo.title,
+          video_id: videoId,
+          total_comments: stats.total,
+          positive_count: stats.positive,
+          negative_count: stats.negative,
+          neutral_count: stats.neutral,
+          credits_used: creditsUsed,
+          is_premium: isPremium,
+        });
+        // Deduct credits
+        const { data: profile } = await supabase
+          .from("users")
+          .select("credit_balance")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          const newBalance = Math.max(0, (profile.credit_balance ?? 0) - creditsUsed);
+          await supabase
+            .from("users")
+            .update({ credit_balance: newBalance })
+            .eq("id", user.id);
+        }
+      }
+    } catch (dbError) {
+      console.error("Database save error:", dbError);
     }
 
     return NextResponse.json({

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const { error: insertError } = await supabase.from("users").insert({
       id: data.user.id,
       email: data.user.email,
-      credit_balance: 100,
+      credit_balance: 10,
     });
 
     if (insertError) {
