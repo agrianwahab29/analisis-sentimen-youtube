@@ -6,7 +6,8 @@ export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next") ?? "/dashboard/main";
 
   if (code) {
-    const response = NextResponse.redirect(new URL(next, request.nextUrl.origin));
+    // Create response object first (empty, will redirect after successful exchange)
+    const response = new NextResponse.redirect(new URL(next, request.nextUrl.origin));
     const supabase = createSupabaseRouteClient(request, response);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
@@ -21,11 +22,11 @@ export async function GET(request: NextRequest) {
           .single();
 
         if (!existingUser) {
-          await supabase.from("users").insert({
+          await supabase.from("users").upsert({
             id: user.id,
             email: user.email,
             credit_balance: 10,
-          });
+          }, { onConflict: "id" });
         }
       }
 
@@ -34,5 +35,5 @@ export async function GET(request: NextRequest) {
   }
 
   // Return the user to the login page if there's an error
-  return NextResponse.redirect(new URL("/auth/login", request.nextUrl.origin));
+  return NextResponse.redirect(new URL("/auth/login?error=auth_failed", request.nextUrl.origin));
 }

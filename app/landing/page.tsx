@@ -17,13 +17,13 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <a
-              href="/auth/login"
+              href="/auth/google"
               className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
             >
               Masuk
             </a>
             <Link
-              href="/auth/login"
+              href="/auth/google"
               className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-700 hover:to-blue-800"
             >
               Mulai Gratis
@@ -61,7 +61,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col gap-4 sm:flex-row">
                 <Link
-                  href="/auth/login"
+                  href="/auth/google"
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-700 hover:to-blue-800 hover:shadow-xl hover:shadow-blue-500/30"
                 >
                   Mulai Gratis
@@ -377,7 +377,7 @@ export default function LandingPage() {
             tidak perlu kartu kredit.
           </p>
           <Link
-            href="/auth/login"
+            href="/auth/google"
             className="inline-flex items-center gap-2 rounded-lg bg-white px-8 py-4 text-base font-semibold text-blue-600 shadow-xl transition-all hover:bg-blue-50 hover:scale-105"
           >
             Mulai Gratis Sekarang
