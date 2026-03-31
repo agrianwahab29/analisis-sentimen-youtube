@@ -144,7 +144,7 @@ export function AnalysisInput() {
           </div>
 
           <span className="ml-auto text-xs font-medium text-slate-500">
-            {isPremium ? "2 kredit / 10 komentar" : "1 kredit / 10 komentar"}
+            {isPremium ? "15 kredit / analisis" : "5 kredit / analisis"}
           </span>
         </div>
 

@@ -34,6 +34,26 @@ export async function POST(request: NextRequest) {
 
     // Check YouTube API key
     const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+
+    // Check user credits first
+    const { supabase } = await createSupabaseRouteHandlerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const requiredCredits = isPremium ? 15 : 5;
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("users")
+        .select("credit_balance")
+        .eq("id", user.id)
+        .single();
+      const balance = profile?.credit_balance ?? 0;
+      if (balance < requiredCredits) {
+        return NextResponse.json(
+          { error: `Kredit tidak cukup. Butuh ${requiredCredits} kredit, saldo Anda ${balance}.` },
+          { status: 402 }
+        );
+      }
+    }
     
     if (!youtubeApiKey || youtubeApiKey === "your_youtube_api_key_here") {
       // Use HuggingFace model with demo data
@@ -77,10 +97,8 @@ export async function POST(request: NextRequest) {
       likes: comment.likeCount,
     }));
 
-    // Calculate credits
-    const creditCost = isPremium ? 2 : 1;
-    const commentsPerCredit = 10;
-    const creditsUsed = Math.ceil(stats.total / commentsPerCredit) * creditCost;
+    // Fixed credit cost per analysis
+    const creditsUsed = isPremium ? 15 : 5;
 
     // Generate word cloud
     const wordCloud = generateWordCloud(analyzedComments.map((c) => c.text));
@@ -97,12 +115,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save to database
+    // Save to database and deduct credits
     try {
-      const { supabase } = await createSupabaseRouteHandlerClient();
-      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Save analysis history
         await supabase.from("analysis_history").insert({
           user_id: user.id,
           video_url: url,
@@ -116,13 +131,13 @@ export async function POST(request: NextRequest) {
           is_premium: isPremium,
         });
         // Deduct credits
-        const { data: profile } = await supabase
+        const { data: currentProfile } = await supabase
           .from("users")
           .select("credit_balance")
           .eq("id", user.id)
           .single();
-        if (profile) {
-          const newBalance = Math.max(0, (profile.credit_balance ?? 0) - creditsUsed);
+        if (currentProfile) {
+          const newBalance = Math.max(0, (currentProfile.credit_balance ?? 0) - creditsUsed);
           await supabase
             .from("users")
             .update({ credit_balance: newBalance })

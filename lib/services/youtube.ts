@@ -1,10 +1,12 @@
 import { google, youtube_v3 } from "googleapis";
 
-// Initialize YouTube API client
-const youtube = google.youtube({
-  version: "v3",
-  auth: process.env.YOUTUBE_API_KEY || "",
-});
+// Create YouTube client lazily to ensure env vars are available
+function getYouTubeClient() {
+  return google.youtube({
+    version: "v3",
+    auth: process.env.YOUTUBE_API_KEY || "",
+  });
+}
 
 export interface YouTubeComment {
   id: string;
@@ -41,7 +43,7 @@ export function extractVideoId(url: string): string | null {
 
 export async function getVideoInfo(videoId: string): Promise<VideoInfo | null> {
   try {
-    const response = await youtube.videos.list({
+    const response = await getYouTubeClient().videos.list({
       part: ["snippet", "statistics"],
       id: [videoId],
     });
@@ -80,14 +82,14 @@ export async function getVideoComments(
 
   try {
     while (comments.length < maxResults) {
-      const response = await youtube.commentThreads.list({
+      const response = await getYouTubeClient().commentThreads.list({
         part: ["snippet"],
         videoId: videoId,
         maxResults: Math.min(100, maxResults - comments.length),
         pageToken: nextPageToken,
-      }) as youtube_v3.Schema$CommentThreadListResponse;
+      });
 
-      const items = response.items || [];
+      const items = response.data.items || [];
 
       for (const item of items) {
         const commentSnippet = item.snippet?.topLevelComment?.snippet;
@@ -102,7 +104,7 @@ export async function getVideoComments(
         }
       }
 
-      nextPageToken = response.nextPageToken || undefined;
+      nextPageToken = response.data.nextPageToken || undefined;
       if (!nextPageToken) break;
     }
 
