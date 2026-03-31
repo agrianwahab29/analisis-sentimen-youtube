@@ -6,8 +6,7 @@ export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next") ?? "/dashboard/main";
 
   if (code) {
-    // Create response object first (empty, will redirect after successful exchange)
-    const response = new NextResponse.redirect(new URL(next, request.nextUrl.origin));
+    const response = NextResponse.redirect(new URL(next, request.nextUrl.origin));
     const supabase = createSupabaseRouteClient(request, response);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
