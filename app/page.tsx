@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import LandingPage from "@/app/landing/page";
 
 export default function HomePage() {
-  // Redirect ke login page sebagai entry point
-  redirect("/auth/login");
+  return <LandingPage />;
 }
