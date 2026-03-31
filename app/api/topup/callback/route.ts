@@ -31,29 +31,45 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log("Sociabuzz webhook received:", body);
 
-    const {
-      order_id,
-      amount,
-      status,
-      email,
-      name,
-      message,
-      type = "qris",
-    } = body;
+    // Sociabuzz webhook payload can vary - log everything for debugging
+    console.log("=== Sociabuzz Webhook Received ===");
+    console.log("Full payload:", JSON.stringify(body, null, 2));
+    console.log("Headers:", Object.fromEntries(request.headers));
 
-    // Validate required fields
-    if (!order_id || !amount || !status) {
-      console.error("Invalid webhook payload:", body);
-      return NextResponse.json(
-        { error: "Invalid webhook payload" },
-        { status: 400 }
-      );
+    // Extract fields - Sociabuzz may use different field names
+    const orderId = body.order_id || body.orderId || body.id || body.transaction_id;
+    const amount = body.amount || body.total_amount || body.price || body.value;
+    const status = body.status || body.payment_status || body.state || body.transaction_status;
+    const email = body.email || body.customer_email || body.payer_email || body.user_email;
+    const name = body.name || body.customer_name || body.payer_name || body.user_name;
+    const message = body.message || body.notes || body.note || body.description || body.custom_message;
+    const type = body.type || body.payment_type || body.method || "qris";
+
+    // Validate required fields (more lenient)
+    if (!orderId || !amount) {
+      console.error("Missing required fields - orderId:", orderId, "amount:", amount);
+      console.error("Full body:", body);
+      
+      // Still try to process if we have minimum data
+      if (!orderId) {
+        return NextResponse.json(
+          { error: "Missing order_id", received: body },
+          { status: 400 }
+        );
+      }
     }
 
-    // Only process successful payments
-    if (status !== "paid" && status !== "success") {
-      console.log("Payment not successful yet:", status);
-      return NextResponse.json({ success: true, message: "Payment not successful yet" });
+    console.log("Extracted fields:", { orderId, amount, status, email, name, message, type });
+
+    // Only process successful payments (check various status values)
+    const successStatuses = ["paid", "success", "completed", "settlement", "capture", "success"];
+    if (status && !successStatuses.includes(status.toLowerCase())) {
+      console.log("Payment status not successful yet:", status);
+      return NextResponse.json({ 
+        success: true, 
+        message: `Payment status: ${status}`,
+        status: status
+      });
     }
 
     // Initialize Supabase client with service role
