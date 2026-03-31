@@ -10,7 +10,6 @@ import {
   History,
   LogOut,
   Sparkles,
-  Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -25,7 +24,6 @@ const sidebarItems: SidebarItem[] = [
   { name: "Analisis", href: "/dashboard/analysis", icon: BarChart3 },
   { name: "Top Up", href: "/dashboard/topup", icon: Wallet },
   { name: "Riwayat", href: "/dashboard/history", icon: History },
-  { name: "Admin Panel", href: "/admin", icon: Shield },
 ];
 
 export function Sidebar() {
