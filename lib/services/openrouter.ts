@@ -71,7 +71,7 @@ Berikan analisis dalam format berikut (gunakan Bahasa Indonesia):
           "X-Title": "VidSense AI Analysis",
         },
         body: JSON.stringify({
-          model: "meta-llama/llama-3-8b-instruct:free",
+          model: process.env.OPENROUTER_MODEL || "meta-llama/llama-3-8b-instruct:free",
           messages: [
             {
               role: "system",
