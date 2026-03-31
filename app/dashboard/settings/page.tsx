@@ -328,7 +328,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    <DialogTrigger asChild>
+                    <DialogTrigger>
                       <Button
                         variant="destructive"
                         size="sm"
