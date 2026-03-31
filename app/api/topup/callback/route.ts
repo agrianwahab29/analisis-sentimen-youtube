@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
             email: email,
             credit_balance: 0,
           })
-          .select("id")
+          .select("id, credit_balance")
           .single();
         
         if (createUserError || !newUser) {
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
           );
         }
         
-        user = newUser;
+        user = { id: newUser.id, credit_balance: newUser.credit_balance };
         console.log("✅ New user created:", user.id);
       }
 
