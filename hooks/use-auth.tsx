@@ -14,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>; // Add manual refresh function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,10 +25,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = async () => {
     try {
-      const res = await fetch("/api/auth/session", { cache: "no-store" });
+      const res = await fetch("/api/auth/session", { 
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+        }
+      });
       const data = (await res.json()) as { user: AuthUser | null };
       setUser(data.user ?? null);
-    } catch {
+    } catch (error) {
+      console.error("Failed to refresh session:", error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -54,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { Provider } = AuthContext;
   return (
-    <Provider value={{ user, loading, signInWithGoogle, signOut }}>
+    <Provider value={{ user, loading, signInWithGoogle, signOut, refreshSession }}>
       {children}
     </Provider>
   );
