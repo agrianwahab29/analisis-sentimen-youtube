@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       .update({
         payment_status: "paid",
         paid_at: new Date().toISOString(),
-        sociabuzz_order_id: order_id,
+        sociabuzz_order_id: orderId,
         sociabuzz_response: body,
         updated_at: new Date().toISOString(),
       })
