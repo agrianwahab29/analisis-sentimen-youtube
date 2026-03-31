@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const orderId = body.order_id || body.orderId || body.id || body.transaction_id;
     const amount = body.amount || body.total_amount || body.price || body.value;
     const status = body.status || body.payment_status || body.state || body.transaction_status;
-    const email = body.email || body.customer_email || body.payer_email || body.user_email;
+    let email = body.email || body.customer_email || body.payer_email || body.user_email;
     const name = body.name || body.customer_name || body.payer_name || body.user_name;
     const message = body.message || body.notes || body.note || body.description || body.custom_message;
     const type = body.type || body.payment_type || body.method || "qris";
@@ -57,6 +57,12 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    // Generate placeholder email if not provided (for test webhooks)
+    if (!email) {
+      email = `webhook-test-${orderId}@sociabuzz.local`;
+      console.warn("Email not provided, using placeholder:", email);
     }
 
     console.log("Extracted fields:", { orderId, amount, status, email, name, message, type });
