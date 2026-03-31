@@ -6,8 +6,13 @@ export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next") ?? "/dashboard/main";
 
   if (code) {
+    // Create initial redirect response
     const response = NextResponse.redirect(new URL(next, request.nextUrl.origin));
-    const supabase = createSupabaseRouteClient(request, response);
+    
+    // Create supabase client with cookie handling
+    const { supabase, response: updatedResponse } = createSupabaseRouteClient(request, response);
+    
+    // Exchange code for session - this will set cookies via setAll handler
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
@@ -29,7 +34,8 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return response;
+      // Return the response with cookies set
+      return updatedResponse;
     }
   }
 

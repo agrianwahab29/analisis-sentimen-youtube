@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseRouteClient } from "@/lib/supabase/server";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const origin = new URL(request.url).origin;
 
-  const { supabase, responseHeaders } = await createSupabaseRouteHandlerClient();
+  // Create initial response
+  const response = NextResponse.next();
+  const { supabase, response: updatedResponse } = createSupabaseRouteClient(request, response);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -14,11 +16,10 @@ export async function GET(request: Request) {
   });
 
   if (error || !data?.url) {
-    const response = NextResponse.redirect(
+    const errorResponse = NextResponse.redirect(
       new URL("/auth/login?error=oauth_failed", request.url)
     );
-    responseHeaders.forEach((value, key) => response.headers.set(key, value));
-    return response;
+    return errorResponse;
   }
 
   return NextResponse.redirect(data.url);

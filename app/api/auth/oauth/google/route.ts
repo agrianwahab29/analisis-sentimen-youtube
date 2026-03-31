@@ -1,9 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseRouteClient } from "@/lib/supabase/server";
 
-export async function GET(request: Request) {
-  const { supabase, responseHeaders } = await createSupabaseRouteHandlerClient();
+export async function GET(request: NextRequest) {
   const origin = new URL(request.url).origin;
+
+  // Create initial response
+  const response = NextResponse.next();
+  const { supabase } = createSupabaseRouteClient(request, response);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -14,15 +17,13 @@ export async function GET(request: Request) {
   });
 
   if (error || !data?.url) {
-    const response = NextResponse.json(
+    return NextResponse.json(
       { error: "Gagal memulai login Google." },
       { status: 400 }
     );
-    responseHeaders.forEach((value, key) => response.headers.set(key, value));
-    return response;
   }
 
-  const response = NextResponse.json({ url: data.url });
-  responseHeaders.forEach((value, key) => response.headers.set(key, value));
-  return response;
+  // Return JSON with OAuth URL for client-side redirect
+  const jsonResponse = NextResponse.json({ url: data.url });
+  return jsonResponse;
 }
