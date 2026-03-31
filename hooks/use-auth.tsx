@@ -12,12 +12,7 @@ type AuthUser = {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (
-    email: string,
-    password: string,
-    fullName: string
-  ) => Promise<{ error: string | null; emailConfirmationRequired?: boolean }>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -43,44 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshSession();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signInWithGoogle = async () => {
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = (await res.json()) as { ok?: true; error?: string };
+      const res = await fetch("/api/auth/oauth/google", { cache: "no-store" });
+      const data = (await res.json()) as { url?: string; error?: string };
 
-      if (!res.ok) return { error: data.error ?? "Gagal masuk. Coba lagi." };
-      await refreshSession();
-      return { error: null };
-    } catch {
-      return { error: "Gagal masuk. Coba lagi." };
-    }
-  };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Gagal masuk dengan Google.");
+      }
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, fullName }),
-      });
-      const data = (await res.json()) as {
-        ok?: true;
-        error?: string;
-        emailConfirmationRequired?: boolean;
-      };
-
-      if (!res.ok) return { error: data.error ?? "Gagal mendaftar." };
-      await refreshSession();
-      return {
-        error: null,
-        emailConfirmationRequired: data.emailConfirmationRequired,
-      };
-    } catch {
-      return { error: "Gagal mendaftar." };
+      window.location.href = data.url;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Gagal masuk dengan Google.";
+      throw new Error(message);
     }
   };
 
@@ -94,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { Provider } = AuthContext;
   return (
-    <Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <Provider value={{ user, loading, signInWithGoogle, signOut }}>
       {children}
     </Provider>
   );
