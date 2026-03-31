@@ -47,7 +47,7 @@ export function Sidebar() {
   const displayName = email.split("@")[0];
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider>
       <motion.aside
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
