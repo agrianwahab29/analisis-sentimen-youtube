@@ -1,5 +1,7 @@
 import { google, youtube_v3 } from "googleapis";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 // Create YouTube client lazily to ensure env vars are available
 function getYouTubeClient() {
   return google.youtube({
@@ -79,10 +81,23 @@ export async function getVideoComments(
 ): Promise<YouTubeComment[]> {
   const comments: YouTubeComment[] = [];
   let nextPageToken: string | undefined = undefined;
+  
+  // Check if API key is configured
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey || apiKey === "your_youtube_api_key_here") {
+    console.error("YOUTUBE_API_KEY not configured");
+    throw new Error("YOUTUBE_API_KEY belum dikonfigurasi");
+  }
 
   try {
+    console.log(`Fetching comments for video: ${videoId}`);
+    let pageCount = 0;
+    
     while (comments.length < maxResults) {
-      const response = await getYouTubeClient().commentThreads.list({
+      pageCount++;
+      console.log(`Fetching page ${pageCount}, current comments: ${comments.length}`);
+      
+      const response: { data: youtube_v3.Schema$CommentThreadListResponse } = await getYouTubeClient().commentThreads.list({
         part: ["snippet"],
         videoId: videoId,
         maxResults: Math.min(100, maxResults - comments.length),
@@ -90,6 +105,12 @@ export async function getVideoComments(
       });
 
       const items = response.data.items || [];
+      console.log(`Received ${items.length} items from YouTube API`);
+
+      if (items.length === 0) {
+        console.log("No more comments available");
+        break;
+      }
 
       for (const item of items) {
         const commentSnippet = item.snippet?.topLevelComment?.snippet;
@@ -105,14 +126,18 @@ export async function getVideoComments(
       }
 
       nextPageToken = response.data.nextPageToken || undefined;
-      if (!nextPageToken) break;
+      if (!nextPageToken) {
+        console.log("No more pages available");
+        break;
+      }
     }
 
+    console.log(`Total comments fetched: ${comments.length}`);
     return comments;
-  } catch (error) {
-    console.error("Error fetching comments:", error);
-    // Return empty array if comments are disabled or other error
-    return [];
+  } catch (error: any) {
+    console.error("Error fetching comments:", error?.message || error);
+    // Re-throw error so caller knows something went wrong
+    throw error;
   }
 }
 

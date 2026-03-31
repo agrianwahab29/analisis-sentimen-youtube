@@ -31,8 +31,9 @@ export async function POST(request: Request) {
   });
 
   if (signUpError) {
+    console.error("Supabase signUp error:", signUpError);
     const response = NextResponse.json(
-      { error: "Gagal mendaftar. Coba lagi nanti." },
+      { error: signUpError.message || "Gagal mendaftar. Email mungkin sudah terdaftar." },
       { status: 400 }
     );
     responseHeaders.forEach((value, key) => response.headers.set(key, value));

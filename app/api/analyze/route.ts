@@ -61,15 +61,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Real data flow
-    const [videoInfo, rawComments] = await Promise.all([
-      getVideoInfo(videoId),
-      getVideoComments(videoId, 5000),
-    ]);
+    let videoInfo;
+    let rawComments;
+    
+    try {
+      [videoInfo, rawComments] = await Promise.all([
+        getVideoInfo(videoId),
+        getVideoComments(videoId, 5000),
+      ]);
+    } catch (youtubeError: any) {
+      console.error("YouTube API error:", youtubeError);
+      return NextResponse.json(
+        { error: `Gagal mengambil data YouTube: ${youtubeError.message || "Unknown error"}` },
+        { status: 500 }
+      );
+    }
 
     if (!videoInfo) {
       return NextResponse.json(
         { error: "Video tidak ditemukan atau tidak dapat diakses" },
         { status: 404 }
+      );
+    }
+    
+    if (!rawComments || rawComments.length === 0) {
+      return NextResponse.json(
+        { error: "Tidak ada komentar yang dapat dianalisis pada video ini" },
+        { status: 400 }
       );
     }
 
@@ -130,7 +148,9 @@ export async function POST(request: NextRequest) {
           credits_used: creditsUsed,
           is_premium: isPremium,
         });
-        // Deduct credits
+    // Deduct credits
+    try {
+      if (user) {
         const { data: currentProfile } = await supabase
           .from("users")
           .select("credit_balance")
@@ -138,11 +158,21 @@ export async function POST(request: NextRequest) {
           .single();
         if (currentProfile) {
           const newBalance = Math.max(0, (currentProfile.credit_balance ?? 0) - creditsUsed);
-          await supabase
+          const { error: updateError } = await supabase
             .from("users")
             .update({ credit_balance: newBalance })
             .eq("id", user.id);
+          
+          if (updateError) {
+            console.error("Failed to update credits:", updateError);
+          } else {
+            console.log(`Credits updated: ${currentProfile.credit_balance} -> ${newBalance}`);
+          }
         }
+      }
+    } catch (dbError) {
+      console.error("Database update error:", dbError);
+    }
       }
     } catch (dbError) {
       console.error("Database save error:", dbError);
