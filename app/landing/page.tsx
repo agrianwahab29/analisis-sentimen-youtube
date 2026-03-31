@@ -15,13 +15,7 @@ export default function LandingPage() {
               VidSense <span className="text-slate-500">AI</span>
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <a
-              href="/auth/google"
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              Masuk
-            </a>
+          <div className="flex items-center">
             <Link
               href="/auth/google"
               className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-700 hover:to-blue-800"
