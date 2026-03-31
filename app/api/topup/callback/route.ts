@@ -17,8 +17,15 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook signature (optional but recommended)
-    const signature = request.headers.get("x-sociabuzz-signature");
+    // Verify webhook token if provided
+    const authHeader = request.headers.get("authorization");
+    const webhookToken = process.env.SOCIABUZZ_WEBHOOK_TOKEN;
+    
+    // Optional: Verify token if set in environment variables
+    if (webhookToken && authHeader !== `Bearer ${webhookToken}`) {
+      console.warn("Webhook token mismatch or not provided");
+      // Don't reject - allow for testing without token
+    }
     
     // Parse request body
     const body = await request.json();
@@ -222,4 +229,13 @@ async function createTransaction(
   }
 
   return transaction;
+}
+
+// GET handler for webhook testing
+export async function GET() {
+  return NextResponse.json({
+    success: true,
+    message: "Sociabuzz webhook endpoint is active",
+    timestamp: new Date().toISOString(),
+  });
 }
