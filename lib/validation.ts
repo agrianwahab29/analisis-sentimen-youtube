@@ -37,15 +37,7 @@ export function validateYouTubeURL(url: string): ValidationResult {
 
   const trimmedUrl = url.trim();
 
-  // Check URL format dasar
-  if (!URL_REGEX.test(trimmedUrl)) {
-    return {
-      isValid: false,
-      error: "Format URL tidak valid",
-    };
-  }
-
-  // Check YouTube patterns
+  // Check YouTube patterns directly (skip generic URL check)
   let isYouTube = false;
   let videoId: string | null = null;
 
