@@ -2,10 +2,11 @@
 
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { Sidebar } from "./sidebar";
 import { CreditBadge } from "./credit-badge";
-import { UserNav } from "./user-nav";
 import { useAuth } from "@/hooks/use-auth";
+import { Sparkles } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -25,8 +26,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="pl-64">
         {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-6 backdrop-blur-xl"
-        >
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-6 backdrop-blur-xl">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold text-slate-900 font-heading">
               Dashboard
@@ -34,9 +34,38 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <CreditBadge credits={credits} />
-            <div className="h-8 w-px bg-slate-200" />
-            <UserNav />
+            <Link href="/dashboard/topup">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 px-4 py-2 hover:shadow-md transition-shadow cursor-pointer"
+              >
+                {/* Credit Icon */}
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 border border-amber-200">
+                  <Sparkles className="h-5 w-5 text-amber-600" />
+                </div>
+
+                {/* Credit Info */}
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-amber-600">Saldo</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-bold text-slate-900 font-heading tracking-tight">
+                      {new Intl.NumberFormat("id-ID").format(credits)}
+                    </span>
+                    <span className="text-xs text-slate-500">kredit</span>
+                  </div>
+                </div>
+
+                {/* Top Up Button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="ml-2 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  + Top Up
+                </motion.button>
+              </motion.div>
+            </Link>
           </div>
         </header>
 

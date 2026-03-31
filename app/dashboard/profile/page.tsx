@@ -1,58 +1,113 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { BadgeCheck, Calendar, Mail, Activity, Zap } from "lucide-react";
+import { BadgeCheck, Calendar, Mail, Activity, Zap, Coins, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 
-// Mock stats - in production, these would come from the API
-const mockStats = {
-  totalAnalyses: 0,
-  memberSince: new Date().toLocaleDateString("id-ID", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }),
-  totalCreditsUsed: 0,
-  favoriteAnalysisType: "Sentiment",
-};
+interface UserStats {
+  totalAnalyses: number;
+  totalCreditsUsed: number;
+  memberSince: string;
+  creditBalance: number;
+}
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [stats, setStats] = useState<UserStats>({
+    totalAnalyses: 0,
+    totalCreditsUsed: 0,
+    memberSince: "-",
+    creditBalance: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
   const email = user?.email ?? "user@email.com";
   const displayName = email.split("@")[0];
   const initial = email.charAt(0).toUpperCase();
+  const creditBalance = typeof (user as Record<string, unknown>)?.credit_balance === "number"
+    ? ((user as Record<string, unknown>).credit_balance as number)
+    : 0;
 
-  const stats = [
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        // Fetch analysis history
+        const historyRes = await fetch("/api/history");
+        if (historyRes.ok) {
+          const { history } = await historyRes.json();
+          
+          // Calculate total analyses
+          const totalAnalyses = history?.length ?? 0;
+          
+          // Calculate credits used (sum of all analysis credits)
+          const totalCreditsUsed = history?.reduce((sum: number, h: { credits_used: number }) => sum + (h.credits_used || 0), 0) ?? 0;
+          
+          // Get earliest analysis date or use current date
+          let memberSince = new Date().toLocaleDateString("id-ID", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          
+          if (history && history.length > 0) {
+            const earliestDate = history.reduce((earliest: string, h: { created_at: string }) => 
+              h.created_at < earliest ? h.created_at : earliest, history[0].created_at);
+            memberSince = new Date(earliestDate).toLocaleDateString("id-ID", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            });
+          }
+
+          setStats({
+            totalAnalyses,
+            totalCreditsUsed,
+            memberSince,
+            creditBalance,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, [creditBalance]);
+
+  const statsData = [
     {
       label: "Total Analisis",
-      value: mockStats.totalAnalyses.toString(),
+      value: stats.totalAnalyses.toString(),
       icon: Activity,
       color: "text-blue-500",
       bgColor: "bg-blue-50",
     },
     {
-      label: "Kredit Digunakan",
-      value: mockStats.totalCreditsUsed.toString(),
-      icon: Zap,
+      label: "Kredit Tersisa",
+      value: new Intl.NumberFormat("id-ID").format(stats.creditBalance),
+      icon: Coins,
       color: "text-amber-500",
       bgColor: "bg-amber-50",
     },
     {
+      label: "Kredit Digunakan",
+      value: stats.totalCreditsUsed.toString(),
+      icon: Zap,
+      color: "text-purple-500",
+      bgColor: "bg-purple-50",
+    },
+    {
       label: "Member Sejak",
-      value: mockStats.memberSince,
+      value: stats.memberSince,
       icon: Calendar,
       color: "text-emerald-500",
       bgColor: "bg-emerald-50",
-    },
-    {
-      label: "Tipe Favorit",
-      value: mockStats.favoriteAnalysisType,
-      icon: BadgeCheck,
-      color: "text-purple-500",
-      bgColor: "bg-purple-50",
     },
   ];
 
@@ -65,9 +120,9 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <h1 className="text-2xl font-bold text-slate-900 font-heading">Profile</h1>
+          <h1 className="text-2xl font-bold text-slate-900 font-heading">Profil</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage your account information and view your activity
+            Kelola informasi akun dan lihat aktivitas Anda
           </p>
         </motion.div>
 
@@ -108,7 +163,7 @@ export default function ProfilePage() {
             {/* Stats Grid */}
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {stats.map((stat, index) => {
+                {statsData.map((stat, index) => {
                   const Icon = stat.icon;
                   return (
                     <motion.div
@@ -127,7 +182,7 @@ export default function ProfilePage() {
                             {stat.label}
                           </p>
                           <p className="text-lg font-semibold text-slate-900 truncate">
-                            {stat.value}
+                            {loading ? "..." : stat.value}
                           </p>
                         </div>
                       </div>
@@ -147,28 +202,37 @@ export default function ProfilePage() {
         >
           <Card>
             <CardHeader>
-              <CardTitle>Account Information</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <UserIcon className="h-5 w-5 text-slate-500" />
+                Informasi Akun
+              </CardTitle>
               <CardDescription>
-                Your account details and preferences
+                Detail akun dan preferensi Anda
               </CardDescription>
             </CardHeader>
             <CardContent>
               <dl className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-3 border-b border-slate-100">
-                  <dt className="text-sm font-medium text-slate-500">Display Name</dt>
+                  <dt className="text-sm font-medium text-slate-500">Nama Tampilan</dt>
                   <dd className="md:col-span-2 text-sm text-slate-900">{displayName}</dd>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-3 border-b border-slate-100">
-                  <dt className="text-sm font-medium text-slate-500">Email Address</dt>
+                  <dt className="text-sm font-medium text-slate-500">Email</dt>
                   <dd className="md:col-span-2 text-sm text-slate-900">{email}</dd>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-3 border-b border-slate-100">
-                  <dt className="text-sm font-medium text-slate-500">Account Type</dt>
-                  <dd className="md:col-span-2 text-sm text-slate-900">Free Plan</dd>
+                  <dt className="text-sm font-medium text-slate-500">Tipe Akun</dt>
+                  <dd className="md:col-span-2 text-sm text-slate-900">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Gratis
+                    </span>
+                  </dd>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-3">
-                  <dt className="text-sm font-medium text-slate-500">Member Since</dt>
-                  <dd className="md:col-span-2 text-sm text-slate-900">{mockStats.memberSince}</dd>
+                  <dt className="text-sm font-medium text-slate-500">Member Sejak</dt>
+                  <dd className="md:col-span-2 text-sm text-slate-900">
+                    {loading ? "..." : stats.memberSince}
+                  </dd>
                 </div>
               </dl>
             </CardContent>
