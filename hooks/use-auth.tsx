@@ -38,20 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshSession();
   }, []);
 
+  // Direct redirect to /auth/google for proper PKCE flow
+  // Using server-side redirect ensures code_verifier cookie is properly set
   const signInWithGoogle = async () => {
-    try {
-      const res = await fetch("/api/auth/oauth/google", { cache: "no-store" });
-      const data = (await res.json()) as { url?: string; error?: string };
-
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Gagal masuk dengan Google.");
-      }
-
-      window.location.href = data.url;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Gagal masuk dengan Google.";
-      throw new Error(message);
-    }
+    window.location.href = "/auth/google";
   };
 
   const signOut = async () => {

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/server";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const origin = new URL(request.url).origin;
 
-  // Create initial response
-  const response = NextResponse.next();
-  const { supabase, response: updatedResponse } = createSupabaseRouteClient(request, response);
+  // Use the route handler client with async cookies
+  const { supabase, responseHeaders } = await createSupabaseRouteHandlerClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -16,11 +15,15 @@ export async function GET(request: NextRequest) {
   });
 
   if (error || !data?.url) {
-    const errorResponse = NextResponse.redirect(
+    const response = NextResponse.redirect(
       new URL("/auth/login?error=oauth_failed", request.url)
     );
-    return errorResponse;
+    responseHeaders.forEach((value, key) => response.headers.set(key, value));
+    return response;
   }
 
-  return NextResponse.redirect(data.url);
+  // Return redirect with Set-Cookie headers for code_verifier
+  const response = NextResponse.redirect(data.url);
+  responseHeaders.forEach((value, key) => response.headers.set(key, value));
+  return response;
 }

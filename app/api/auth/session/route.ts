@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseRouteClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
-export async function GET(request: NextRequest) {
-  const response = NextResponse.next();
-  const { supabase } = createSupabaseRouteClient(request, response);
+export async function GET() {
+  const { supabase, responseHeaders } = await createSupabaseRouteHandlerClient();
 
   const {
     data: { user },
@@ -19,7 +18,9 @@ export async function GET(request: NextRequest) {
     creditBalance = profile?.credit_balance ?? 0;
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     user: user ? { ...user, credit_balance: creditBalance } : null,
   });
+  responseHeaders.forEach((value, key) => response.headers.set(key, value));
+  return response;
 }
