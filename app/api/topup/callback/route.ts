@@ -72,11 +72,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Initialize Supabase client with service role
+    // Initialize Supabase client with service role (bypass RLS for webhook)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    if (!supabaseServiceKey) {
+      console.error("SUPABASE_SERVICE_ROLE_KEY is not set in environment variables");
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey || '');
 
     // Extract voucher code from message if exists
     const voucherCode = extractVoucherCode(message);
@@ -120,9 +124,18 @@ export async function POST(request: NextRequest) {
           .single();
         
         if (createUserError || !newUser) {
-          console.error("Failed to create user:", createUserError);
+          console.error("=== Failed to create user ===");
+          console.error("Email:", email);
+          console.error("Error details:", JSON.stringify(createUserError, null, 2));
+          console.error("Service role key present:", !!supabaseServiceKey);
+          
           return NextResponse.json(
-            { error: "Failed to create user", email: email },
+            { 
+              error: "Failed to create user", 
+              email: email,
+              details: createUserError?.message || "Unknown error",
+              service_role_key_present: !!supabaseServiceKey
+            },
             { status: 500 }
           );
         }
