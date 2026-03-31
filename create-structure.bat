@@ -1,0 +1,15 @@
+@echo off
+mkdir "app\auth\login"
+mkdir "app\auth\register"
+mkdir "app\dashboard\main"
+mkdir "app\dashboard\analysis"
+mkdir "app\dashboard\topup"
+mkdir "app\dashboard\history"
+mkdir "app\api\auth\callback"
+mkdir "components\ui"
+mkdir "components\layout"
+mkdir "components\dashboard"
+mkdir "hooks"
+mkdir "lib\types"
+mkdir "lib\supabase"
+echo Structure created!
