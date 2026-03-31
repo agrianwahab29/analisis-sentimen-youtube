@@ -100,18 +100,35 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Find by email match (fallback)
-      const { data: user } = await supabase
+      let { data: user } = await supabase
         .from("users")
         .select("id, credit_balance")
         .eq("email", email)
         .single();
       
       if (!user) {
-        console.error("User not found for email:", email);
-        return NextResponse.json(
-          { error: "User not found" },
-          { status: 404 }
-        );
+        console.warn("User not found for email:", email, "- Creating new user...");
+        
+        // Auto-create user if not exists
+        const { data: newUser, error: createUserError } = await supabase
+          .from("users")
+          .insert({
+            email: email,
+            credit_balance: 0,
+          })
+          .select("id")
+          .single();
+        
+        if (createUserError || !newUser) {
+          console.error("Failed to create user:", createUserError);
+          return NextResponse.json(
+            { error: "Failed to create user", email: email },
+            { status: 500 }
+          );
+        }
+        
+        user = newUser;
+        console.log("✅ New user created:", user.id);
       }
 
       // Create transaction record
@@ -253,5 +270,7 @@ export async function GET() {
     success: true,
     message: "Sociabuzz webhook endpoint is active",
     timestamp: new Date().toISOString(),
+    endpoint: "/api/topup/callback",
+    status: "ready",
   });
 }
