@@ -13,7 +13,9 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
-  const credits = (user as Record<string, unknown>)?.credit_balance as number ?? 0;
+  const credits = typeof (user as Record<string, unknown>)?.credit_balance === "number"
+    ? ((user as Record<string, unknown>).credit_balance as number)
+    : 0;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
