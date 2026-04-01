@@ -1,17 +1,33 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
 /**
  * POST /api/topup/generate
  * 
  * Creates a transaction record with unique voucher code
  * For WhatsApp GoPay payments
+ * 
+ * Uses server-side cookie authentication (same pattern as /api/auth/session)
  */
 
 export async function POST(request: Request) {
   try {
-    // Create Supabase client with service role key (bypass RLS)
+    // First, get user from session cookies
+    const { supabase: sessionClient, responseHeaders } = await createSupabaseRouteHandlerClient();
+    
+    const { data: { user }, error: sessionError } = await sessionClient.auth.getUser();
+
+    if (sessionError || !user) {
+      console.error("Session auth error:", sessionError);
+      return NextResponse.json(
+        { error: "Unauthorized - Please login again" },
+        { status: 401 }
+      );
+    }
+
+    // Create Supabase client with service role key (bypass RLS for database operations)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     
@@ -24,28 +40,6 @@ export async function POST(request: Request) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get current user from JWT token in request
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: "No authorization header" },
-        { status: 401 }
-      );
-    }
-
-    // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (authError || !user) {
-      console.error("Auth error:", authError);
-      return NextResponse.json(
-        { error: "Unauthorized - Please login again" },
-        { status: 401 }
-      );
-    }
 
     // Parse request body
     let body;
