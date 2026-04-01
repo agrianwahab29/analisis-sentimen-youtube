@@ -1,67 +1,61 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FolderTree, FileText, Users, UserPlus, Edit3, Trash2 } from "lucide-react";
+import { UserCheck, UserX, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
 
-const activities = [
-  {
-    id: 1,
-    type: "category",
-    action: "created",
-    title: "Kategori baru ditambahkan",
-    description: "Teknologi AI",
-    user: "Admin",
-    time: "5 menit lalu",
-    icon: FolderTree,
-    color: "bg-blue-500",
-  },
-  {
-    id: 2,
-    type: "post",
-    action: "created",
-    title: "Postingan baru dipublikasikan",
-    description: "Panduan Analisis Sentimen",
-    user: "Admin",
-    time: "1 jam lalu",
-    icon: FileText,
-    color: "bg-violet-500",
-  },
-  {
-    id: 3,
-    type: "user",
-    action: "registered",
-    title: "Pengguna baru terdaftar",
-    description: "john.doe@email.com",
-    user: "Sistem",
-    time: "3 jam lalu",
-    icon: UserPlus,
-    color: "bg-emerald-500",
-  },
-  {
-    id: 4,
-    type: "category",
-    action: "updated",
-    title: "Kategori diperbarui",
-    description: "Tutorial YouTube",
-    user: "Admin",
-    time: "5 jam lalu",
-    icon: Edit3,
-    color: "bg-amber-500",
-  },
-  {
-    id: 5,
-    type: "post",
-    action: "deleted",
-    title: "Postingan dihapus",
-    description: "Draft Lama",
-    user: "Admin",
-    time: "1 hari lalu",
-    icon: Trash2,
-    color: "bg-rose-500",
-  },
-];
+interface Activity {
+  id: string;
+  type: "user" | "transaction";
+  action: "approve" | "suspend" | "add_credits" | "approve_payment" | "reject_payment";
+  title: string;
+  description: string;
+  time: string;
+  icon: any;
+  color: string;
+}
 
 export function RecentActivity() {
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/activity")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setActivities(data.activities || []);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to fetch activity:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6">
+        <p className="text-center text-slate-500">Memuat aktivitas...</p>
+      </div>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 font-heading mb-4">
+          Aktivitas Terbaru
+        </h2>
+        <p className="text-center text-slate-500 py-8">
+          Belum ada aktivitas admin
+        </p>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -100,7 +94,6 @@ export function RecentActivity() {
             </div>
             <div className="text-right shrink-0">
               <p className="text-xs text-slate-400">{activity.time}</p>
-              <p className="text-xs text-slate-500">oleh {activity.user}</p>
             </div>
           </motion.div>
         ))}

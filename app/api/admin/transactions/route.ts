@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with SERVICE ROLE KEY (bypass RLS)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    // Build query
+    // Build query - fetch ALL transactions
     let query = supabase
       .from("transactions")
       .select(`
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     if (fetchError) {
       console.error("Failed to fetch transactions:", fetchError);
       return NextResponse.json(
-        { error: "Failed to fetch transactions" },
+        { error: "Failed to fetch transactions", details: fetchError.message },
         { status: 500 }
       );
     }

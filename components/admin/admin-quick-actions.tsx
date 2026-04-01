@@ -2,30 +2,22 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { FolderTree, FileText, Users, Plus } from "lucide-react";
+import { Users, CreditCard, Plus } from "lucide-react";
 
 const actions = [
   {
-    name: "Tambah Kategori",
-    description: "Buat kategori baru untuk konten",
-    icon: FolderTree,
-    href: "/admin/categories",
+    name: "Kelola Pengguna",
+    description: "Approve, suspend, atau hapus pengguna",
+    icon: Users,
+    href: "/admin/users",
     color: "bg-blue-500",
     hoverColor: "hover:bg-blue-600",
   },
   {
-    name: "Tambah Postingan",
-    description: "Buat postingan baru",
-    icon: FileText,
-    href: "/admin/posts",
-    color: "bg-violet-500",
-    hoverColor: "hover:bg-violet-600",
-  },
-  {
-    name: "Tambah Pengguna",
-    description: "Daftarkan pengguna baru",
-    icon: Users,
-    href: "/admin/users",
+    name: "Verifikasi Pembayaran",
+    description: "Approve transaksi top up pengguna",
+    icon: CreditCard,
+    href: "/admin/transactions",
     color: "bg-emerald-500",
     hoverColor: "hover:bg-emerald-600",
   },

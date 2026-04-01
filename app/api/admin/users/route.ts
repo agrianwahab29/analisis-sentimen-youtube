@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with SERVICE ROLE KEY (bypass RLS)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
     const search = searchParams.get("search") || "";
 
-    // Build query - include all users including unapproved and suspended
+    // Build query - fetch ALL users including unapproved and suspended
     let query = supabase
       .from("users")
       .select("id, email, name, created_at, credit_balance, role, is_approved, is_suspended, suspension_reason", { count: "exact" });
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     if (fetchError) {
       console.error("Failed to fetch users:", fetchError);
       return NextResponse.json(
-        { error: "Failed to fetch users" },
+        { error: "Failed to fetch users", details: fetchError.message },
         { status: 500 }
       );
     }
