@@ -1,4 +1,4 @@
-import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 
@@ -11,49 +11,39 @@ import { randomBytes } from "crypto";
 
 export async function POST(request: Request) {
   try {
-    // Create Supabase client
-    const { supabase } = await createSupabaseRouteHandlerClient();
-
-    // Get current user
-    const {
-      data: { user },
-      error: sessionError,
-    } = await supabase.auth.getUser();
-
-    if (sessionError || !user) {
-      console.error("Auth error:", sessionError);
+    // Create Supabase client with service role key (bypass RLS)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase credentials");
       return NextResponse.json(
-        { error: "Unauthorized - Please login" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is approved and not suspended
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("is_approved, is_suspended, suspension_reason")
-      .eq("id", user.id)
-      .single();
-
-    if (userError || !userData) {
-      console.error("User fetch error:", userError);
-      return NextResponse.json(
-        { error: "Failed to fetch user data" },
+        { error: "Server configuration error" },
         { status: 500 }
       );
     }
 
-    if (userData.is_suspended) {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get current user from JWT token in request
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader) {
       return NextResponse.json(
-        { error: `Account suspended: ${userData.suspension_reason || "Contact admin"}` },
-        { status: 403 }
+        { error: "No authorization header" },
+        { status: 401 }
       );
     }
 
-    if (!userData.is_approved) {
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+
+    if (authError || !user) {
+      console.error("Auth error:", authError);
       return NextResponse.json(
-        { error: "Account pending approval - Contact admin" },
-        { status: 403 }
+        { error: "Unauthorized - Please login again" },
+        { status: 401 }
       );
     }
 
@@ -62,6 +52,7 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch (e) {
+      console.error("Body parse error:", e);
       return NextResponse.json(
         { error: "Invalid request body" },
         { status: 400 }
@@ -124,6 +115,8 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    console.log("Transaction created successfully:", transaction.id);
 
     return NextResponse.json({
       success: true,
