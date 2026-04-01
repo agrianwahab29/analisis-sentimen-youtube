@@ -1,18 +1,18 @@
-import { createSupabaseRouteClient } from "@/lib/supabase/server";
-import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 
 /**
- * Generate Voucher Code API
+ * POST /api/topup/generate
  * 
  * Creates a transaction record with unique voucher code
- * User will use this code when paying via Sociabuzz
+ * For WhatsApp GoPay payments
  */
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const response = new NextResponse();
-    const { supabase } = createSupabaseRouteClient(request, response);
+    // Create Supabase client
+    const { supabase } = await createSupabaseRouteHandlerClient();
 
     // Get current user
     const {
@@ -21,14 +21,53 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (sessionError || !user) {
+      console.error("Auth error:", sessionError);
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - Please login" },
         { status: 401 }
       );
     }
 
+    // Check if user is approved and not suspended
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("is_approved, is_suspended, suspension_reason")
+      .eq("id", user.id)
+      .single();
+
+    if (userError || !userData) {
+      console.error("User fetch error:", userError);
+      return NextResponse.json(
+        { error: "Failed to fetch user data" },
+        { status: 500 }
+      );
+    }
+
+    if (userData.is_suspended) {
+      return NextResponse.json(
+        { error: `Account suspended: ${userData.suspension_reason || "Contact admin"}` },
+        { status: 403 }
+      );
+    }
+
+    if (!userData.is_approved) {
+      return NextResponse.json(
+        { error: "Account pending approval - Contact admin" },
+        { status: 403 }
+      );
+    }
+
     // Parse request body
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+
     const { packageId } = body;
 
     if (!packageId) {
@@ -70,24 +109,22 @@ export async function POST(request: NextRequest) {
         bonus_credits: pkg.bonus,
         total_credits: pkg.credits + pkg.bonus,
         price: pkg.price,
-        payment_method: "sociabuzz",
-        payment_status: "pending",
+        payment_method: "whatsapp_gopay",
+        payment_status: "pending_verification",
         voucher_code: voucherCode,
+        whatsapp_number: "082291134197",
       })
       .select()
       .single();
 
     if (insertError) {
-      console.error("Failed to create transaction:", insertError);
+      console.error("Transaction insert error:", insertError);
       return NextResponse.json(
-        { error: "Failed to create transaction" },
+        { error: "Failed to create transaction", details: insertError.message },
         { status: 500 }
       );
     }
 
-    // Generate Sociabuzz payment URL with voucher code in message
-    const sociabuzzUrl = `https://sociabuzz.com/agrianwahab/tribe`;
-    
     return NextResponse.json({
       success: true,
       transaction_id: transaction.id,
@@ -101,19 +138,13 @@ export async function POST(request: NextRequest) {
         bonus: pkg.bonus,
         total_credits: pkg.credits + pkg.bonus,
       },
-      payment_instructions: {
-        sociabuzz_url: sociabuzzUrl,
-        tribe_id: "agrianwahab",
-        voucher_code: voucherCode,
-        message: `Gunakan kode voucher: ${voucherCode} saat pembayaran`,
-        amount: pkg.price,
-      },
+      message: "Transaction created successfully",
     });
 
   } catch (error) {
-    console.error("Generate voucher error:", error);
+    console.error("Generate transaction error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
@@ -124,7 +155,7 @@ export async function POST(request: NextRequest) {
  * Format: VID-XXXXXX (6 alphanumeric chars)
  */
 function generateVoucherCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Exclude I, O, 1, 0 for readability
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "VID-";
   
   for (let i = 0; i < 6; i++) {
