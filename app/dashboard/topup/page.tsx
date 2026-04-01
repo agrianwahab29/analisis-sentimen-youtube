@@ -75,9 +75,18 @@ Terima kasih!`;
   const handleCreateTransaction = async () => {
     setIsGenerating(true);
     try {
+      // Get auth token from session
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('sb-access-token='))
+        ?.split('=')[1];
+
       const res = await fetch("/api/topup/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
         body: JSON.stringify({ packageId: selectedPackage }),
       });
 
