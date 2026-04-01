@@ -5,11 +5,9 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
-  FolderTree,
-  FileText,
   Users,
+  CreditCard,
   LogOut,
-  Sparkles,
   ArrowLeft,
   Shield,
 } from "lucide-react";
@@ -23,9 +21,8 @@ interface SidebarItem {
 
 const sidebarItems: SidebarItem[] = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Kategori", href: "/admin/categories", icon: FolderTree },
-  { name: "Postingan", href: "/admin/posts", icon: FileText },
   { name: "Pengguna", href: "/admin/users", icon: Users },
+  { name: "Verifikasi Pembayaran", href: "/admin/transactions", icon: CreditCard },
 ];
 
 export function AdminSidebar() {
