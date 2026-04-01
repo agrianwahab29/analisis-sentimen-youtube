@@ -27,19 +27,28 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log("User authenticated:", user.id, user.email);
+
     // Create Supabase client with service role key (bypass RLS for database operations)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    console.log("Environment check - URL exists:", !!supabaseUrl, "Service key exists:", !!supabaseServiceKey);
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing Supabase credentials");
+      console.error("Missing Supabase credentials - URL:", !!supabaseUrl, "ServiceKey:", !!supabaseServiceKey);
       return NextResponse.json(
-        { error: "Server configuration error" },
+        { error: "Server configuration error - missing credentials" },
         { status: 500 }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     // Parse request body
     let body;
@@ -82,30 +91,43 @@ export async function POST(request: Request) {
     const voucherCode = generateVoucherCode();
     const orderId = `TOPUP-${Date.now()}-${randomBytes(4).toString("hex").toUpperCase()}`;
 
+    // Prepare transaction data
+    const transactionData = {
+      user_id: user.id,
+      order_id: orderId,
+      package_id: packageId,
+      package_name: pkg.name,
+      credits_amount: pkg.credits,
+      bonus_credits: pkg.bonus,
+      total_credits: pkg.credits + pkg.bonus,
+      price: pkg.price,
+      payment_method: "whatsapp_gopay",
+      payment_status: "pending_verification",
+      voucher_code: voucherCode,
+      whatsapp_number: "082291134197",
+    };
+
+    console.log("Attempting to insert transaction:", JSON.stringify(transactionData, null, 2));
+
     // Create transaction record
     const { data: transaction, error: insertError } = await supabase
       .from("transactions")
-      .insert({
-        user_id: user.id,
-        order_id: orderId,
-        package_id: packageId,
-        package_name: pkg.name,
-        credits_amount: pkg.credits,
-        bonus_credits: pkg.bonus,
-        total_credits: pkg.credits + pkg.bonus,
-        price: pkg.price,
-        payment_method: "whatsapp_gopay",
-        payment_status: "pending_verification",
-        voucher_code: voucherCode,
-        whatsapp_number: "082291134197",
-      })
+      .insert(transactionData)
       .select()
       .single();
 
     if (insertError) {
-      console.error("Transaction insert error:", insertError);
+      console.error("Transaction insert error:", JSON.stringify(insertError, null, 2));
+      console.error("Error code:", insertError.code);
+      console.error("Error message:", insertError.message);
+      console.error("Error details:", insertError.details);
       return NextResponse.json(
-        { error: "Failed to create transaction", details: insertError.message },
+        { 
+          error: "Failed to create transaction", 
+          details: insertError.message,
+          code: insertError.code,
+          hint: insertError.hint
+        },
         { status: 500 }
       );
     }
