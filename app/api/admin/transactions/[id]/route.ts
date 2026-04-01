@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Initialize Supabase client
@@ -59,7 +59,7 @@ export async function PATCH(
     // Parse request body
     const body = await request.json();
     const { action, reason } = body;
-    const transactionId = params.id;
+    const { id: transactionId } = await params;
 
     if (!action || !["approve", "reject"].includes(action)) {
       return NextResponse.json(
