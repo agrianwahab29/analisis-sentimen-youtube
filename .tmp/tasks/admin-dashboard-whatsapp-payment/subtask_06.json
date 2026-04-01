@@ -1,0 +1,27 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-06",
+  "seq": "06",
+  "title": "Create API route PATCH /api/admin/transactions/[id]",
+  "status": "pending",
+  "depends_on": ["01", "02"],
+  "parallel": false,
+  "suggested_agent": "backend-typescript-architect",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "app/api/topup/callback/route.ts"
+  ],
+  "acceptance_criteria": [
+    "Route file created at app/api/admin/transactions/[id]/route.ts",
+    "Accepts action: approve or reject",
+    "Approve: updates payment_status to paid, adds credits to user, logs admin action",
+    "Reject: updates payment_status to rejected, optional reason",
+    "Returns success with transaction and credits_added",
+    "Auth check: only admin can access",
+    "Creates entry in admin_logs table"
+  ],
+  "deliverables": [
+    "app/api/admin/transactions/[id]/route.ts"
+  ]
+}

@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Sparkles, Check, Copy, ExternalLink, Loader2, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Dialog,
   DialogContent,
@@ -35,22 +36,40 @@ interface GeneratedVoucher {
   orderId: string;
   transactionId: string;
   sociabuzzUrl: string;
+  whatsappUrl?: string;
 }
 
 export default function TopUpPage() {
+  const { user } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<string>("standard");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedVoucher, setGeneratedVoucher] = useState<GeneratedVoucher | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"sociabuzz" | "whatsapp">("whatsapp");
 
   const sociabuzzUrl = "https://sociabuzz.com/agrianwahab/tribe";
   const tribeId = "agrianwahab";
+  const whatsappNumber = "6282291134197"; // 082291134197
+  const userEmail = user?.email || "user@example.com";
 
   const handleCopyTribeId = () => {
     navigator.clipboard.writeText(tribeId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const generateWhatsAppUrl = (voucherCode: string) => {
+    const message = `Halo, saya ingin top up kredit Vidsense AI.
+
+📦 Paket: ${selectedPkg?.name}
+💰 Harga: Rp ${selectedPkg?.price.toLocaleString("id-ID")}
+🎫 Kode Voucher: ${voucherCode}
+👤 Email: ${userEmail}
+
+Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
+
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
   };
 
   const selectedPkg = creditPackages.find((p) => p.id === selectedPackage);
@@ -72,11 +91,14 @@ export default function TopUpPage() {
       }
 
       const data = await res.json();
+      const voucherCode = data.voucher_code;
+      
       setGeneratedVoucher({
-        voucherCode: data.voucher_code,
+        voucherCode: voucherCode,
         orderId: data.order_id,
         transactionId: data.transaction_id,
-        sociabuzzUrl: `${data.payment_instructions.sociabuzz_url}?message=${encodeURIComponent(`Voucher: ${data.voucher_code}`)}`,
+        sociabuzzUrl: `${data.payment_instructions.sociabuzz_url}?message=${encodeURIComponent(`Voucher: ${voucherCode}`)}`,
+        whatsappUrl: generateWhatsAppUrl(voucherCode),
       });
       setIsDialogOpen(true);
       toast.success("Voucher berhasil dibuat!");
@@ -298,36 +320,102 @@ export default function TopUpPage() {
                   </div>
                 </div>
 
-                {/* Payment Instructions */}
-                <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 space-y-2">
-                  <p className="text-sm font-semibold text-amber-800">
-                    Cara Pembayaran:
-                  </p>
-                  <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
-                    <li>Salin kode voucher di atas</li>
-                    <li>Klik tombol "Bayar di Sociabuzz" di bawah</li>
-                    <li>Pilih nominal sesuai paket yang dipilih</li>
-                    <li>Paste kode voucher di kolom "Pesan" saat checkout</li>
-                    <li>Selesaikan pembayaran via QRIS/e-wallet</li>
-                    <li>Kredit otomatis masuk setelah pembayaran berhasil</li>
-                  </ol>
+                {/* Payment Method Selection */}
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-slate-700">Pilih Metode Pembayaran:</p>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setPaymentMethod("whatsapp")}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        paymentMethod === "whatsapp"
+                          ? "border-green-500 bg-green-50"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="text-center">
+                        <p className="font-semibold text-green-700">WhatsApp GoPay</p>
+                        <p className="text-xs text-slate-600 mt-1">Manual Transfer</p>
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={() => setPaymentMethod("sociabuzz")}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        paymentMethod === "sociabuzz"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="text-center">
+                        <p className="font-semibold text-blue-700">Sociabuzz</p>
+                        <p className="text-xs text-slate-600 mt-1">Otomatis</p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
 
+                {/* Payment Instructions */}
+                {paymentMethod === "whatsapp" ? (
+                  <div className="rounded-lg bg-green-50 border border-green-200 p-4 space-y-2">
+                    <p className="text-sm font-semibold text-green-800">
+                      Cara Pembayaran via WhatsApp:
+                    </p>
+                    <ol className="text-xs text-green-700 space-y-1 list-decimal list-inside">
+                      <li>Klik tombol "Bayar via WhatsApp" di bawah</li>
+                      <li>Pesan otomatis akan terbuka dengan detail pesanan</li>
+                      <li>Kirim pesan ke nomor 082291134197</li>
+                      <li>Tunggu instruksi pembayaran GoPay</li>
+                      <li>Kirim bukti transfer setelah pembayaran</li>
+                      <li>Admin akan verifikasi dan kredit akan masuk</li>
+                    </ol>
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 space-y-2">
+                    <p className="text-sm font-semibold text-amber-800">
+                      Cara Pembayaran via Sociabuzz:
+                    </p>
+                    <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
+                      <li>Klik tombol "Bayar di Sociabuzz" di bawah</li>
+                      <li>Pilih nominal sesuai paket yang dipilih</li>
+                      <li>Paste kode voucher di kolom "Pesan" saat checkout</li>
+                      <li>Selesaikan pembayaran via QRIS/e-wallet</li>
+                      <li>Kredit otomatis masuk setelah pembayaran berhasil</li>
+                    </ol>
+                  </div>
+                )}
+
                 {/* Pay Button */}
-                <motion.a
-                  href={generatedVoucher.sociabuzzUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green-500/25 transition-all hover:from-green-700 hover:to-green-800"
-                >
-                  Bayar di Sociabuzz
-                  <ExternalLink className="h-4 w-4" />
-                </motion.a>
+                {paymentMethod === "whatsapp" && generatedVoucher.whatsappUrl ? (
+                  <motion.a
+                    href={generatedVoucher.whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green-500/25 transition-all hover:from-green-700 hover:to-green-800"
+                  >
+                    Bayar via WhatsApp
+                    <ExternalLink className="h-4 w-4" />
+                  </motion.a>
+                ) : (
+                  <motion.a
+                    href={generatedVoucher.sociabuzzUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-700 hover:to-blue-800"
+                  >
+                    Bayar di Sociabuzz
+                    <ExternalLink className="h-4 w-4" />
+                  </motion.a>
+                )}
 
                 <p className="text-center text-xs text-slate-500">
-                  Kredit akan otomatis masuk setelah pembayaran berhasil
+                  {paymentMethod === "whatsapp" 
+                    ? "Kredit masuk setelah admin verifikasi bukti transfer" 
+                    : "Kredit akan otomatis masuk setelah pembayaran berhasil"}
                 </p>
               </div>
             )}

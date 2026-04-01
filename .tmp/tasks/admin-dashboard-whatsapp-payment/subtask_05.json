@@ -1,0 +1,27 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-05",
+  "seq": "05",
+  "title": "Create API route GET /api/admin/transactions",
+  "status": "pending",
+  "depends_on": ["01"],
+  "parallel": true,
+  "suggested_agent": "backend-typescript-architect",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "app/api/analyze/route.ts",
+    "app/api/topup/callback/route.ts"
+  ],
+  "acceptance_criteria": [
+    "Route file created at app/api/admin/transactions/route.ts",
+    "Returns transactions with user_email, package_name, voucher_code, price, payment_method, payment_status",
+    "Supports filter by status (?status=pending)",
+    "Supports limit parameter",
+    "Auth check: only admin can access",
+    "Response matches schema in design doc"
+  ],
+  "deliverables": [
+    "app/api/admin/transactions/route.ts"
+  ]
+}

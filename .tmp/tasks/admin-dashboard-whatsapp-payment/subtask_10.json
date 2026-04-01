@@ -1,0 +1,27 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-10",
+  "seq": "10",
+  "title": "Update users-header component",
+  "status": "pending",
+  "depends_on": [],
+  "parallel": true,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/admin/users-header.tsx",
+    "components/admin/posts-header.tsx",
+    "components/admin/categories-header.tsx"
+  ],
+  "acceptance_criteria": [
+    "Displays page title 'Users Management'",
+    "Includes search input for filtering users",
+    "Includes filter dropdown (by role, status)",
+    "Uses shadcn/ui Input and Select components",
+    "Emits search/filter events to parent"
+  ],
+  "deliverables": [
+    "components/admin/users-header.tsx"
+  ]
+}

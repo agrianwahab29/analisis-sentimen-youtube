@@ -1,0 +1,30 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-18",
+  "seq": "18",
+  "title": "Testing and deployment",
+  "status": "pending",
+  "depends_on": ["13", "14", "15", "16", "17"],
+  "parallel": false,
+  "suggested_agent": "test-automator",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [],
+  "acceptance_criteria": [
+    "Admin login test: agrianwahab10@gmail.com can access /admin",
+    "User access test: regular user redirected from /admin",
+    "Stats API returns correct data",
+    "Users page displays all users",
+    "Transactions page displays transactions with filters",
+    "Approve transaction: credits added to user",
+    "Reject transaction: status updated",
+    "WhatsApp payment flow: voucher generated, message correct",
+    "Mobile responsive check",
+    "Deployed to Vercel",
+    "Production environment tested"
+  ],
+  "deliverables": [
+    "test-results.md",
+    "deployment-verification.md"
+  ]
+}

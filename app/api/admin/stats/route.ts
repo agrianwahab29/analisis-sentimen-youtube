@@ -1,0 +1,109 @@
+import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+
+/**
+ * GET /api/admin/stats
+ * 
+ * Returns dashboard statistics for admin
+ * Only accessible by admin (agrianwahab10@gmail.com)
+ */
+
+export async function GET(request: NextRequest) {
+  try {
+    // Initialize Supabase client
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: "Missing Supabase credentials" },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify admin access
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user is admin
+    const { data: userData } = await supabase
+      .from("users")
+      .select("email, role")
+      .eq("id", user.id)
+      .single();
+
+    if (!userData || userData.email !== "agrianwahab10@gmail.com") {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    // Get statistics
+    const [
+      usersResult,
+      transactionsResult,
+      pendingResult,
+      totalRevenueResult,
+      monthRevenueResult
+    ] = await Promise.all([
+      // Total users
+      supabase.from("users").select("*", { count: "exact", head: true }),
+      
+      // Total transactions
+      supabase.from("transactions").select("*", { count: "exact", head: true }),
+      
+      // Pending verification
+      supabase
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("payment_status", "pending_verification"),
+      
+      // Total revenue (paid transactions)
+      supabase
+        .from("transactions")
+        .select("price", { count: "exact" })
+        .eq("payment_status", "paid"),
+      
+      // Revenue this month
+      supabase
+        .from("transactions")
+        .select("price", { count: "exact" })
+        .eq("payment_status", "paid")
+        .gte("created_at", new Date(new Date().setDate(1)).toISOString()) // First day of this month
+    ]);
+
+    // Calculate totals
+    const totalRevenueData = totalRevenueResult.data || [];
+    const totalRevenueAmount = totalRevenueData.reduce((sum: number, t: any) => sum + (t.price || 0), 0);
+    
+    const monthRevenueData = monthRevenueResult.data || [];
+    const revenueThisMonthAmount = monthRevenueData.reduce((sum: number, t: any) => sum + (t.price || 0), 0);
+
+    return NextResponse.json({
+      success: true,
+      stats: {
+        total_users: usersResult.count || 0,
+        total_transactions: transactionsResult.count || 0,
+        pending_verification: pendingResult.count || 0,
+        total_revenue: totalRevenueAmount,
+        revenue_this_month: revenueThisMonthAmount,
+      },
+    });
+
+  } catch (error) {
+    console.error("Admin stats error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

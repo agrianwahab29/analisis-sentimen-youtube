@@ -1,0 +1,27 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-14",
+  "seq": "14",
+  "title": "Create users management page /admin/users/page.tsx",
+  "status": "pending",
+  "depends_on": ["07", "09", "10"],
+  "parallel": false,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/admin/users-table.tsx",
+    "components/admin/users-header.tsx"
+  ],
+  "acceptance_criteria": [
+    "Page at app/admin/users/page.tsx",
+    "Displays UsersHeader component",
+    "Displays UsersTable component",
+    "Search and filter functionality wired up",
+    "Data fetched from /api/admin/users",
+    "Loading and error states handled"
+  ],
+  "deliverables": [
+    "app/admin/users/page.tsx"
+  ]
+}

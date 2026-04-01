@@ -1,0 +1,25 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-02",
+  "seq": "02",
+  "title": "Create RLS policies for admin tables",
+  "status": "pending",
+  "depends_on": ["01"],
+  "parallel": false,
+  "suggested_agent": "database-specialist",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [],
+  "acceptance_criteria": [
+    "RLS enabled on admin_logs table",
+    "Admin can SELECT from admin_logs (email = agrianwahab10@gmail.com)",
+    "Admin can INSERT to admin_logs",
+    "Users can SELECT own transactions",
+    "Admin can SELECT all transactions",
+    "Admin can SELECT all users",
+    "Policies tested with supabase auth"
+  ],
+  "deliverables": [
+    "supabase/migrations/add_admin_rls_policies.sql"
+  ]
+}

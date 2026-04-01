@@ -1,0 +1,28 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-15",
+  "seq": "15",
+  "title": "Create transactions page /admin/transactions/page.tsx",
+  "status": "pending",
+  "depends_on": ["07", "11", "12"],
+  "parallel": false,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/admin/transactions-table.tsx",
+    "components/admin/transactions-header.tsx"
+  ],
+  "acceptance_criteria": [
+    "Page at app/admin/transactions/page.tsx",
+    "Displays TransactionsHeader with status filter",
+    "Displays TransactionsTable with approve/reject actions",
+    "Approve button updates transaction and adds credits",
+    "Reject button opens dialog for reason",
+    "Data fetched from /api/admin/transactions",
+    "Real-time update after action"
+  ],
+  "deliverables": [
+    "app/admin/transactions/page.tsx"
+  ]
+}

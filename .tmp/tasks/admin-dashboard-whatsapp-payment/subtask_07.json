@@ -1,0 +1,27 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-07",
+  "seq": "07",
+  "title": "Create admin layout at /admin/layout.tsx",
+  "status": "pending",
+  "depends_on": [],
+  "parallel": true,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/layout/admin-dashboard-layout.tsx",
+    "components/layout/admin-sidebar.tsx",
+    "app/dashboard/layout.tsx"
+  ],
+  "acceptance_criteria": [
+    "Layout file created at app/admin/layout.tsx",
+    "Uses AdminDashboardLayout component",
+    "Includes AdminSidebar for navigation",
+    "Protects route (redirects non-admin to /dashboard)",
+    "Provides consistent navigation across admin pages"
+  ],
+  "deliverables": [
+    "app/admin/layout.tsx"
+  ]
+}

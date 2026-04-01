@@ -1,0 +1,29 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-09",
+  "seq": "09",
+  "title": "Update users-table component",
+  "status": "pending",
+  "depends_on": ["04"],
+  "parallel": true,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/admin/users-table.tsx",
+    "components/admin/posts-table.tsx",
+    "components/admin/categories-table.tsx"
+  ],
+  "acceptance_criteria": [
+    "Displays users with columns: Email, Name, Joined Date, Credit Balance, Role, Actions",
+    "Fetches data from /api/admin/users",
+    "Supports sorting by column",
+    "Supports search/filter functionality",
+    "Pagination support",
+    "Action button to view user detail",
+    "Uses shadcn/ui Table component"
+  ],
+  "deliverables": [
+    "components/admin/users-table.tsx"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-13",
+  "seq": "13",
+  "title": "Create admin dashboard page /admin/page.tsx",
+  "status": "pending",
+  "depends_on": ["07", "08"],
+  "parallel": false,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/admin/admin-stats.tsx",
+    "components/admin/admin-quick-actions.tsx",
+    "components/admin/recent-activity.tsx"
+  ],
+  "acceptance_criteria": [
+    "Page at app/admin/page.tsx",
+    "Displays AdminStats component",
+    "Displays AdminQuickActions component",
+    "Displays RecentActivity component (last 10 transactions)",
+    "Uses Framer Motion for subtle animations",
+    "Responsive layout"
+  ],
+  "deliverables": [
+    "app/admin/page.tsx"
+  ]
+}

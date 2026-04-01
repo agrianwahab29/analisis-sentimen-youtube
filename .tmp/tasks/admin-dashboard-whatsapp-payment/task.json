@@ -1,0 +1,36 @@
+{
+  "id": "admin-dashboard-whatsapp-payment",
+  "name": "Admin Dashboard + WhatsApp Payment",
+  "status": "active",
+  "objective": "Implement admin dashboard for user management and WhatsApp payment verification",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/admin/admin-stats.tsx",
+    "components/admin/users-table.tsx",
+    "components/admin/users-header.tsx",
+    "components/admin/posts-table.tsx",
+    "components/admin/posts-header.tsx",
+    "components/admin/categories-table.tsx",
+    "components/admin/categories-header.tsx",
+    "components/admin/admin-quick-actions.tsx",
+    "components/admin/recent-activity.tsx",
+    "components/layout/admin-sidebar.tsx",
+    "components/layout/admin-dashboard-layout.tsx",
+    "app/dashboard/topup/page.tsx"
+  ],
+  "exit_criteria": [
+    "Admin dashboard accessible only by agrianwahab10@gmail.com",
+    "Users management page functional with search/filter",
+    "Transaction verification page functional with approve/reject",
+    "WhatsApp payment flow working end-to-end",
+    "All RLS policies and middleware protection in place",
+    "All tests pass",
+    "Deployed to Vercel"
+  ],
+  "subtask_count": 18,
+  "completed_count": 0,
+  "created_at": "2026-04-01T08:24:00Z",
+  "completed_at": null
+}

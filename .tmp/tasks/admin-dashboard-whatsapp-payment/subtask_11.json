@@ -1,0 +1,29 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-11",
+  "seq": "11",
+  "title": "Create transactions-table component",
+  "status": "pending",
+  "depends_on": ["05", "06"],
+  "parallel": false,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/admin/posts-table.tsx",
+    "components/admin/categories-table.tsx",
+    "components/admin/users-table.tsx"
+  ],
+  "acceptance_criteria": [
+    "Displays transactions with columns: User, Package, Voucher Code, Price, Payment Method, Status, Created At, Actions",
+    "Status badge with color coding (pending=yellow, paid=green, rejected=red)",
+    "Approve button calls PATCH /api/admin/transactions/[id]",
+    "Reject button with optional reason dialog",
+    "View button opens detail modal",
+    "Uses shadcn/ui Table, Button, Badge components",
+    "Loading and error states handled"
+  ],
+  "deliverables": [
+    "components/admin/transactions-table.tsx"
+  ]
+}

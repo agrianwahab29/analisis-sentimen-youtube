@@ -1,0 +1,25 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-16",
+  "seq": "16",
+  "title": "Add middleware protection for /admin routes",
+  "status": "pending",
+  "depends_on": ["07"],
+  "parallel": false,
+  "suggested_agent": "backend-typescript-architect",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "middleware.ts"
+  ],
+  "acceptance_criteria": [
+    "Middleware checks for /admin/* routes",
+    "Verifies user is authenticated",
+    "Verifies user email is agrianwahab10@gmail.com",
+    "Redirects unauthorized users to /dashboard",
+    "Allows authorized admin access"
+  ],
+  "deliverables": [
+    "middleware.ts"
+  ]
+}

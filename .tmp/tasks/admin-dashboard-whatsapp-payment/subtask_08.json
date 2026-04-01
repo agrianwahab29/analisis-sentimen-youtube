@@ -1,0 +1,27 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-08",
+  "seq": "08",
+  "title": "Update admin-stats component for dashboard",
+  "status": "pending",
+  "depends_on": ["03"],
+  "parallel": true,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "components/admin/admin-stats.tsx",
+    "components/admin/posts-table.tsx"
+  ],
+  "acceptance_criteria": [
+    "Component displays 4 stat cards: Users, Transactions, Pending, Revenue",
+    "Fetches data from /api/admin/stats",
+    "Uses shadcn/ui Card components",
+    "Includes loading state",
+    "Handles error state gracefully",
+    "Responsive layout"
+  ],
+  "deliverables": [
+    "components/admin/admin-stats.tsx"
+  ]
+}

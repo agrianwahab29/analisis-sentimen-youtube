@@ -1,0 +1,28 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-17",
+  "seq": "17",
+  "title": "Add WhatsApp payment button to /dashboard/topup",
+  "status": "pending",
+  "depends_on": [],
+  "parallel": true,
+  "suggested_agent": "frontend-developer",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [
+    "app/dashboard/topup/page.tsx",
+    "app/api/topup/generate/route.ts"
+  ],
+  "acceptance_criteria": [
+    "WhatsApp payment button added to topup page",
+    "Generates voucher code via /api/topup/generate",
+    "Dialog shows package summary and instructions",
+    "WhatsApp message template includes: package, price, voucher code, email",
+    "Button opens wa.me/6282291134197 with pre-filled message",
+    "Creates transaction with status pending_verification",
+    "Copy voucher code button included"
+  ],
+  "deliverables": [
+    "app/dashboard/topup/page.tsx"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "admin-dashboard-whatsapp-payment-01",
+  "seq": "01",
+  "title": "Create database migration for admin features",
+  "status": "pending",
+  "depends_on": [],
+  "parallel": false,
+  "suggested_agent": "database-specialist",
+  "context_files": [
+    "docs/superpowers/specs/2026-04-01-admin-whatsapp-payment-design.md"
+  ],
+  "reference_files": [],
+  "acceptance_criteria": [
+    "Migration file created at supabase/migrations/add_admin_features.sql",
+    "Adds role column to users table",
+    "Adds payment_method, whatsapp_number, proof_image_url, verified_by, verified_at to transactions",
+    "Creates admin_logs table with proper schema",
+    "Creates indexes for admin_logs",
+    "Migration runs without errors"
+  ],
+  "deliverables": [
+    "supabase/migrations/add_admin_features.sql"
+  ]
+}
