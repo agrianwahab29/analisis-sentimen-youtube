@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Sparkles, Check, Copy, ExternalLink, Loader2, QrCode } from "lucide-react";
+import { Sparkles, Check, Copy, ExternalLink, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -31,51 +31,48 @@ const creditPackages: CreditPackage[] = [
   { id: "enterprise", name: "Enterprise", price: 100000, credits: 1500, bonus: 500 },
 ];
 
-interface GeneratedVoucher {
+interface TransactionData {
+  id: string;
   voucherCode: string;
   orderId: string;
-  transactionId: string;
-  sociabuzzUrl: string;
-  whatsappUrl?: string;
+  packageName: string;
+  price: number;
+  totalCredits: number;
 }
 
 export default function TopUpPage() {
   const { user } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<string>("standard");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedVoucher, setGeneratedVoucher] = useState<GeneratedVoucher | null>(null);
+  const [transaction, setTransaction] = useState<TransactionData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"sociabuzz" | "whatsapp">("whatsapp");
 
-  const sociabuzzUrl = "https://sociabuzz.com/agrianwahab/tribe";
-  const tribeId = "agrianwahab";
-  const whatsappNumber = "6282291134197"; // 082291134197
+  const whatsappNumber = "6282291134197";
   const userEmail = user?.email || "user@example.com";
 
-  const handleCopyTribeId = () => {
-    navigator.clipboard.writeText(tribeId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const selectedPkg = creditPackages.find((p) => p.id === selectedPackage);
+  const totalCredits = selectedPkg ? selectedPkg.credits + selectedPkg.bonus : 0;
 
   const generateWhatsAppUrl = (voucherCode: string) => {
-    const message = `Halo, saya ingin top up kredit Vidsense AI.
+    const message = `Halo Admin Vidsense AI,
+
+Saya ingin top up kredit dengan detail berikut:
 
 📦 Paket: ${selectedPkg?.name}
 💰 Harga: Rp ${selectedPkg?.price.toLocaleString("id-ID")}
 🎫 Kode Voucher: ${voucherCode}
 👤 Email: ${userEmail}
+💳 Metode: GoPay (Transfer)
 
-Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
+Saya akan melakukan transfer dan mengirim bukti transfer melalui chat ini.
+
+Terima kasih!`;
 
     return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
   };
 
-  const selectedPkg = creditPackages.find((p) => p.id === selectedPackage);
-  const totalCredits = selectedPkg ? selectedPkg.credits + selectedPkg.bonus : 0;
-
-  const handleGenerateVoucher = async () => {
+  const handleCreateTransaction = async () => {
     setIsGenerating(true);
     try {
       const res = await fetch("/api/topup/generate", {
@@ -86,55 +83,58 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Gagal generate voucher");
+        toast.error(data.error || "Gagal membuat transaksi");
         return;
       }
 
       const data = await res.json();
-      const voucherCode = data.voucher_code;
       
-      setGeneratedVoucher({
-        voucherCode: voucherCode,
+      setTransaction({
+        id: data.transaction_id,
+        voucherCode: data.voucher_code,
         orderId: data.order_id,
-        transactionId: data.transaction_id,
-        sociabuzzUrl: `${data.payment_instructions.sociabuzz_url}?message=${encodeURIComponent(`Voucher: ${voucherCode}`)}`,
-        whatsappUrl: generateWhatsAppUrl(voucherCode),
+        packageName: data.package?.name || selectedPkg?.name,
+        price: data.package?.price || selectedPkg?.price || 0,
+        totalCredits: data.package?.total_credits || totalCredits,
       });
+      
       setIsDialogOpen(true);
-      toast.success("Voucher berhasil dibuat!");
+      toast.success("Transaksi berhasil dibuat! Silakan lanjutkan pembayaran via WhatsApp.");
     } catch (error) {
-      console.error("Failed to generate voucher:", error);
-      toast.error("Terjadi kesalahan saat membuat voucher");
+      console.error("Failed to create transaction:", error);
+      toast.error("Terjadi kesalahan saat membuat transaksi");
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleCopyVoucher = () => {
-    if (generatedVoucher) {
-      navigator.clipboard.writeText(generatedVoucher.voucherCode);
+    if (transaction) {
+      navigator.clipboard.writeText(transaction.voucherCode);
+      setCopied(true);
       toast.success("Kode voucher disalin!");
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 border border-blue-100">
-            <Sparkles className="h-5 w-5 text-blue-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 border border-green-100">
+            <Sparkles className="h-5 w-5 text-green-600" />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-slate-900 font-heading">
               Top Up Kredit
             </h1>
             <p className="text-sm text-slate-500">
-              Pilih paket kredit untuk menganalisis lebih banyak video
+              Pilih paket dan bayar via WhatsApp GoPay
             </p>
           </div>
         </motion.div>
@@ -153,8 +153,8 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
               onClick={() => setSelectedPackage(pkg.id)}
               className={`relative cursor-pointer rounded-xl border p-5 transition-all duration-200 ${
                 selectedPackage === pkg.id
-                  ? "border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20"
-                  : "border-slate-200 bg-white hover:border-slate-300 card-shadow-hover"
+                  ? "border-green-500 bg-green-50/50 ring-2 ring-green-500/20"
+                  : "border-slate-200 bg-white hover:border-slate-300"
               }`}
             >
               {pkg.popular && (
@@ -170,7 +170,7 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
                   Rp {pkg.price.toLocaleString("id-ID")}
                 </p>
                 <div className="mt-2 flex items-baseline justify-center gap-1">
-                  <span className="text-3xl font-bold text-blue-600">
+                  <span className="text-3xl font-bold text-green-600">
                     {pkg.credits}
                   </span>
                   <span className="text-sm text-slate-500">kredit</span>
@@ -181,13 +181,13 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
                   </p>
                 )}
                 <p className="mt-2 text-xs text-slate-400">
-                  Total: {totalCredits} kredit
+                  Total: {pkg.credits + pkg.bonus} kredit
                 </p>
               </div>
 
               {selectedPackage === pkg.id && (
                 <div className="absolute bottom-3 right-3">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500">
                     <Check className="h-3 w-3 text-white" />
                   </div>
                 </div>
@@ -196,15 +196,16 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
           ))}
         </motion.div>
 
-        {/* Payment Section */}
+        {/* Payment Section - WhatsApp Only */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="rounded-xl border border-slate-200 bg-white p-6 card-shadow"
+          className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
         >
-          <h2 className="text-lg font-semibold text-slate-900 font-heading mb-4">
-            Pembayaran via Sociabuzz
+          <h2 className="text-lg font-semibold text-slate-900 font-heading mb-4 flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-green-600" />
+            Pembayaran via WhatsApp GoPay
           </h2>
 
           <div className="space-y-4">
@@ -213,7 +214,7 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
               <div className="flex items-center justify-between mb-2">
                 <span className="text-slate-600">Paket</span>
                 <span className="font-semibold text-slate-900">
-                  {selectedPkg?.credits} Kredit
+                  {selectedPkg?.name} ({selectedPkg?.credits} Kredit)
                 </span>
               </div>
               {selectedPkg && selectedPkg.bonus > 0 && (
@@ -227,38 +228,46 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
               <div className="border-t border-slate-200 pt-2 mt-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-slate-900">Total</span>
-                  <span className="text-2xl font-bold text-blue-600">
+                  <span className="text-2xl font-bold text-green-600">
                     Rp {selectedPkg?.price.toLocaleString("id-ID")}
                   </span>
                 </div>
               </div>
             </div>
 
+            {/* Instructions */}
+            <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+              <p className="text-sm font-semibold text-green-800 mb-2">
+                Cara Pembayaran:
+              </p>
+              <ol className="text-sm text-green-700 space-y-1 list-decimal list-inside">
+                <li>Klik tombol "Buat Transaksi" di bawah</li>
+                <li>Klik "Bayar via WhatsApp" untuk chat admin</li>
+                <li>Lakukan transfer GoPay ke nomor <strong>082291134197</strong></li>
+                <li>Kirim bukti transfer di WhatsApp</li>
+                <li>Admin akan verifikasi dan kredit masuk ke akun Anda</li>
+              </ol>
+            </div>
 
-
-            {/* Generate Voucher Button */}
+            {/* Create Transaction Button */}
             <Button
-              onClick={handleGenerateVoucher}
+              onClick={handleCreateTransaction}
               disabled={isGenerating}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/25"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg shadow-green-500/25"
               size="lg"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Membuat Voucher...
+                  Membuat Transaksi...
                 </>
               ) : (
                 <>
-                  <QrCode className="mr-2 h-4 w-4" />
-                  Buat Voucher Pembayaran
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Buat Transaksi & Bayar via WhatsApp
                 </>
               )}
             </Button>
-
-            <p className="text-center text-xs text-slate-500">
-              Voucher unik akan dibuat untuk transaksi ini
-            </p>
           </div>
         </motion.div>
 
@@ -266,48 +275,49 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-heading">
-                Pembayaran Top Up
+              <DialogTitle className="font-heading flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-green-600" />
+                Pembayaran WhatsApp GoPay
               </DialogTitle>
               <DialogDescription>
-                Selesaikan pembayaran dengan voucher code ini
+                Transaksi berhasil dibuat. Lanjutkan pembayaran via WhatsApp.
               </DialogDescription>
             </DialogHeader>
 
-            {generatedVoucher && (
+            {transaction && (
               <div className="space-y-4">
                 {/* Package Summary */}
                 <div className="rounded-lg bg-slate-50 p-4 border border-slate-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-slate-600">Paket</span>
                     <span className="font-semibold text-slate-900">
-                      {selectedPkg?.name}
+                      {transaction.packageName}
                     </span>
                   </div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-slate-600">Kredit</span>
-                    <span className="font-bold text-blue-600 text-lg">
-                      {totalCredits} kredit
+                    <span className="font-bold text-green-600 text-lg">
+                      {transaction.totalCredits} kredit
                     </span>
                   </div>
                   <div className="border-t border-slate-200 pt-2 mt-2">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-slate-900">Total</span>
-                      <span className="text-xl font-bold text-blue-600">
-                        Rp {selectedPkg?.price.toLocaleString("id-ID")}
+                      <span className="text-xl font-bold text-green-600">
+                        Rp {transaction.price.toLocaleString("id-ID")}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Voucher Code */}
-                <div className="rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 p-4">
-                  <p className="text-sm text-blue-800 mb-2 font-medium">
-                    Kode Voucher Pembayaran:
+                <div className="rounded-lg border-2 border-dashed border-green-300 bg-green-50 p-4">
+                  <p className="text-sm text-green-800 mb-2 font-medium">
+                    Kode Voucher:
                   </p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded-lg bg-white px-4 py-3 text-lg font-mono font-bold text-blue-600 border border-blue-200 text-center">
-                      {generatedVoucher.voucherCode}
+                    <code className="flex-1 rounded-lg bg-white px-4 py-3 text-lg font-mono font-bold text-green-600 border border-green-200 text-center">
+                      {transaction.voucherCode}
                     </code>
                     <Button
                       onClick={handleCopyVoucher}
@@ -320,155 +330,39 @@ Saya akan kirim bukti transfer via chat ini. Terima kasih!`;
                   </div>
                 </div>
 
-                {/* Payment Method Selection */}
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-slate-700">Pilih Metode Pembayaran:</p>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setPaymentMethod("whatsapp")}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        paymentMethod === "whatsapp"
-                          ? "border-green-500 bg-green-50"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="text-center">
-                        <p className="font-semibold text-green-700">WhatsApp GoPay</p>
-                        <p className="text-xs text-slate-600 mt-1">Manual Transfer</p>
-                      </div>
-                    </button>
-                    
-                    <button
-                      onClick={() => setPaymentMethod("sociabuzz")}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        paymentMethod === "sociabuzz"
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="text-center">
-                        <p className="font-semibold text-blue-700">Sociabuzz</p>
-                        <p className="text-xs text-slate-600 mt-1">Otomatis</p>
-                      </div>
-                    </button>
-                  </div>
+                {/* WhatsApp Instructions */}
+                <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 space-y-2">
+                  <p className="text-sm font-semibold text-amber-800">
+                    Langkah Selanjutnya:
+                  </p>
+                  <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
+                    <li>Klik tombol WhatsApp di bawah</li>
+                    <li>Chat akan terbuka dengan pesan otomatis</li>
+                    <li>Transfer GoPay ke <strong>082291134197</strong></li>
+                    <li>Kirim bukti transfer di chat</li>
+                    <li>Tunggu admin verifikasi (1-24 jam)</li>
+                  </ol>
                 </div>
 
-                {/* Payment Instructions */}
-                {paymentMethod === "whatsapp" ? (
-                  <div className="rounded-lg bg-green-50 border border-green-200 p-4 space-y-2">
-                    <p className="text-sm font-semibold text-green-800">
-                      Cara Pembayaran via WhatsApp:
-                    </p>
-                    <ol className="text-xs text-green-700 space-y-1 list-decimal list-inside">
-                      <li>Klik tombol "Bayar via WhatsApp" di bawah</li>
-                      <li>Pesan otomatis akan terbuka dengan detail pesanan</li>
-                      <li>Kirim pesan ke nomor 082291134197</li>
-                      <li>Tunggu instruksi pembayaran GoPay</li>
-                      <li>Kirim bukti transfer setelah pembayaran</li>
-                      <li>Admin akan verifikasi dan kredit akan masuk</li>
-                    </ol>
-                  </div>
-                ) : (
-                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 space-y-2">
-                    <p className="text-sm font-semibold text-amber-800">
-                      Cara Pembayaran via Sociabuzz:
-                    </p>
-                    <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
-                      <li>Klik tombol "Bayar di Sociabuzz" di bawah</li>
-                      <li>Pilih nominal sesuai paket yang dipilih</li>
-                      <li>Paste kode voucher di kolom "Pesan" saat checkout</li>
-                      <li>Selesaikan pembayaran via QRIS/e-wallet</li>
-                      <li>Kredit otomatis masuk setelah pembayaran berhasil</li>
-                    </ol>
-                  </div>
-                )}
-
-                {/* Pay Button */}
-                {paymentMethod === "whatsapp" && generatedVoucher.whatsappUrl ? (
-                  <motion.a
-                    href={generatedVoucher.whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green-500/25 transition-all hover:from-green-700 hover:to-green-800"
-                  >
-                    Bayar via WhatsApp
-                    <ExternalLink className="h-4 w-4" />
-                  </motion.a>
-                ) : (
-                  <motion.a
-                    href={generatedVoucher.sociabuzzUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-700 hover:to-blue-800"
-                  >
-                    Bayar di Sociabuzz
-                    <ExternalLink className="h-4 w-4" />
-                  </motion.a>
-                )}
+                {/* WhatsApp Button */}
+                <a
+                  href={generateWhatsAppUrl(transaction.voucherCode)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green-500/25 transition-all hover:from-green-700 hover:to-green-800"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Bayar via WhatsApp
+                  <ExternalLink className="h-4 w-4" />
+                </a>
 
                 <p className="text-center text-xs text-slate-500">
-                  {paymentMethod === "whatsapp" 
-                    ? "Kredit masuk setelah admin verifikasi bukti transfer" 
-                    : "Kredit akan otomatis masuk setelah pembayaran berhasil"}
+                  Kredit akan masuk setelah admin verifikasi pembayaran
                 </p>
               </div>
             )}
           </DialogContent>
         </Dialog>
-
-        {/* Recent Transactions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="rounded-xl border border-slate-200 bg-white p-6 card-shadow"
-        >
-          <h2 className="text-lg font-semibold text-slate-900 font-heading mb-4">
-            Riwayat Transaksi Terakhir
-          </h2>
-
-          <div className="space-y-3">
-            {[
-              { date: "31 Mar 2026", type: "Pembelian", amount: 300, price: 25000 },
-              { date: "28 Mar 2026", type: "Pembelian", amount: 100, price: 10000 },
-              { date: "25 Mar 2026", type: "Penggunaan", amount: -50, video: "Cara Membuat Konten Viral" },
-            ].map((transaction, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0"
-              >
-                <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    {transaction.type === "Pembelian" ? (
-                      <span className="text-emerald-600">+{transaction.amount} Kredit</span>
-                    ) : (
-                      <span className="text-rose-600">{transaction.amount} Kredit</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {transaction.date}
-                    {transaction.video && ` • ${transaction.video}`}
-                  </p>
-                </div>
-                <div className="text-right">
-                  {transaction.type === "Pembelian" ? (
-                    <p className="text-sm font-semibold text-slate-900">
-                      Rp {transaction.price?.toLocaleString("id-ID")}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-slate-400">Analisis Video</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
     </DashboardLayout>
   );
