@@ -49,14 +49,36 @@ export async function GET(request: NextRequest) {
 
     // Get statistics
     const [
-      usersResult,
+      totalUsers,
+      pendingApproval,
+      suspendedUsers,
+      activeUsers,
       transactionsResult,
-      pendingResult,
+      pendingVerification,
       totalRevenueResult,
       monthRevenueResult
     ] = await Promise.all([
       // Total users
       supabase.from("users").select("*", { count: "exact", head: true }),
+      
+      // Pending approval (unapproved users)
+      supabase
+        .from("users")
+        .select("*", { count: "exact", head: true })
+        .eq("is_approved", false),
+      
+      // Suspended users
+      supabase
+        .from("users")
+        .select("*", { count: "exact", head: true })
+        .eq("is_suspended", true),
+      
+      // Active users (approved and not suspended)
+      supabase
+        .from("users")
+        .select("*", { count: "exact", head: true })
+        .eq("is_approved", true)
+        .eq("is_suspended", false),
       
       // Total transactions
       supabase.from("transactions").select("*", { count: "exact", head: true }),
@@ -81,7 +103,7 @@ export async function GET(request: NextRequest) {
         .gte("created_at", new Date(new Date().setDate(1)).toISOString()) // First day of this month
     ]);
 
-    // Calculate totals
+    // Calculate revenue totals
     const totalRevenueData = totalRevenueResult.data || [];
     const totalRevenueAmount = totalRevenueData.reduce((sum: number, t: any) => sum + (t.price || 0), 0);
     
@@ -91,9 +113,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       stats: {
-        total_users: usersResult.count || 0,
+        total_users: totalUsers.count || 0,
+        pending_approval: pendingApproval.count || 0,
+        suspended_users: suspendedUsers.count || 0,
+        active_users: activeUsers.count || 0,
         total_transactions: transactionsResult.count || 0,
-        pending_verification: pendingResult.count || 0,
+        pending_verification: pendingVerification.count || 0,
         total_revenue: totalRevenueAmount,
         revenue_this_month: revenueThisMonthAmount,
       },

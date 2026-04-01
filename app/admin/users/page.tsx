@@ -13,6 +13,9 @@ interface User {
   created_at: string;
   credit_balance: number;
   role: string;
+  is_approved: boolean;
+  is_suspended: boolean;
+  suspension_reason: string | null;
 }
 
 export default function AdminUsersPage() {

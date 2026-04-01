@@ -2,20 +2,20 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * GET /api/admin/users
+ * POST /api/admin/users/[id]/credits
  * 
- * Returns list of all users for admin dashboard
+ * Add credits to a user manually
  * Only accessible by admin (agrianwahab10@gmail.com)
  * 
- * Query params:
- * - limit: number (default: 50)
- * - offset: number (default: 0)
- * - search: string (search by email or name)
+ * Body: { credits: number, notes?: string }
  */
 
-export async function GET(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with service role
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     
@@ -27,6 +27,9 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get user ID from params
+    const { id: userId } = await params;
 
     // Verify admin access
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -52,45 +55,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse query params
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
-    const search = searchParams.get("search") || "";
+    // Parse request body
+    const body = await request.json();
+    const { credits, notes = "" } = body;
 
-    // Build query - include all users including unapproved and suspended
-    let query = supabase
-      .from("users")
-      .select("id, email, name, created_at, credit_balance, role, is_approved, is_suspended, suspension_reason", { count: "exact" });
-
-    // Add search filter
-    if (search) {
-      query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
+    if (!credits || typeof credits !== "number" || credits <= 0) {
+      return NextResponse.json(
+        { error: "Invalid credits amount" },
+        { status: 400 }
+      );
     }
 
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1).order("created_at", { ascending: false });
+    // Call admin_add_credits function
+    const { error: addError } = await supabase.rpc("admin_add_credits", {
+      user_uuid: userId,
+      credits: credits,
+      notes: notes,
+    });
 
-    const { data: users, error: fetchError, count } = await query;
-
-    if (fetchError) {
-      console.error("Failed to fetch users:", fetchError);
+    if (addError) {
+      console.error("Failed to add credits:", addError);
       return NextResponse.json(
-        { error: "Failed to fetch users" },
+        { error: "Failed to add credits" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      users: users || [],
-      total: count || 0,
-      limit,
-      offset,
+      message: `Added ${credits} credits to user`,
+      user_id: userId,
+      credits_added: credits,
     });
 
   } catch (error) {
-    console.error("Admin users error:", error);
+    console.error("Add credits error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -2,20 +2,18 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * GET /api/admin/users
+ * POST /api/admin/users/[id]/approve
  * 
- * Returns list of all users for admin dashboard
+ * Approve a user (set is_approved = true)
  * Only accessible by admin (agrianwahab10@gmail.com)
- * 
- * Query params:
- * - limit: number (default: 50)
- * - offset: number (default: 0)
- * - search: string (search by email or name)
  */
 
-export async function GET(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with service role
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     
@@ -27,6 +25,9 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get user ID from params
+    const { id: userId } = await params;
 
     // Verify admin access
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -52,45 +53,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse query params
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
-    const search = searchParams.get("search") || "";
+    // Call approve_user function
+    const { error: approveError } = await supabase.rpc("approve_user", {
+      user_uuid: userId,
+    });
 
-    // Build query - include all users including unapproved and suspended
-    let query = supabase
-      .from("users")
-      .select("id, email, name, created_at, credit_balance, role, is_approved, is_suspended, suspension_reason", { count: "exact" });
-
-    // Add search filter
-    if (search) {
-      query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
-    }
-
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1).order("created_at", { ascending: false });
-
-    const { data: users, error: fetchError, count } = await query;
-
-    if (fetchError) {
-      console.error("Failed to fetch users:", fetchError);
+    if (approveError) {
+      console.error("Failed to approve user:", approveError);
       return NextResponse.json(
-        { error: "Failed to fetch users" },
+        { error: "Failed to approve user" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      users: users || [],
-      total: count || 0,
-      limit,
-      offset,
+      message: "User approved successfully",
+      user_id: userId,
     });
 
   } catch (error) {
-    console.error("Admin users error:", error);
+    console.error("Approve user error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

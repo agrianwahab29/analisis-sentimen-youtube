@@ -2,20 +2,20 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * GET /api/admin/users
+ * DELETE /api/admin/users/[id]
  * 
- * Returns list of all users for admin dashboard
+ * Delete a user (soft or hard delete)
  * Only accessible by admin (agrianwahab10@gmail.com)
  * 
- * Query params:
- * - limit: number (default: 50)
- * - offset: number (default: 0)
- * - search: string (search by email or name)
+ * Query param: ?hard=true (optional, for hard delete)
  */
 
-export async function GET(request: NextRequest) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with service role
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     
@@ -27,6 +27,9 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get user ID from params
+    const { id: userId } = await params;
 
     // Verify admin access
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -52,45 +55,43 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse query params
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
-    const search = searchParams.get("search") || "";
-
-    // Build query - include all users including unapproved and suspended
-    let query = supabase
-      .from("users")
-      .select("id, email, name, created_at, credit_balance, role, is_approved, is_suspended, suspension_reason", { count: "exact" });
-
-    // Add search filter
-    if (search) {
-      query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
+    // Check if trying to delete self
+    if (user.id === userId) {
+      return NextResponse.json(
+        { error: "Cannot delete your own account" },
+        { status: 400 }
+      );
     }
 
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1).order("created_at", { ascending: false });
+    // Check for hard delete query param
+    const { searchParams } = new URL(request.url);
+    const hardDelete = searchParams.get("hard") === "true";
 
-    const { data: users, error: fetchError, count } = await query;
+    // Call delete_user function
+    const { error: deleteError } = await supabase.rpc("delete_user", {
+      user_uuid: userId,
+      hard_delete: hardDelete,
+    });
 
-    if (fetchError) {
-      console.error("Failed to fetch users:", fetchError);
+    if (deleteError) {
+      console.error("Failed to delete user:", deleteError);
       return NextResponse.json(
-        { error: "Failed to fetch users" },
+        { error: "Failed to delete user" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      users: users || [],
-      total: count || 0,
-      limit,
-      offset,
+      message: hardDelete 
+        ? "User permanently deleted" 
+        : "User account deactivated (soft delete)",
+      user_id: userId,
+      hard_delete: hardDelete,
     });
 
   } catch (error) {
-    console.error("Admin users error:", error);
+    console.error("Delete user error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
