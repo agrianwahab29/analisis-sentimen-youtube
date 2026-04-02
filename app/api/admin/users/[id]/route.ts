@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
 /**
  * DELETE /api/admin/users/[id]
@@ -15,45 +16,49 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Initialize Supabase client with service role
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    // Step 1: Verify admin via session
+    const { supabase: sessionClient } = await createSupabaseRouteHandlerClient();
+    const { data: { user }, error: sessionError } = await sessionClient.auth.getUser();
     
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (sessionError || !user) {
       return NextResponse.json(
-        { error: "Missing Supabase credentials" },
-        { status: 500 }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get user ID from params
-    const { id: userId } = await params;
-
-    // Verify admin access
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - Please login" },
         { status: 401 }
       );
     }
 
-    // Check if user is admin
-    const { data: userData } = await supabase
-      .from("users")
-      .select("email, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!userData || userData.email !== "agrianwahab10@gmail.com") {
+    if (user.email !== "agrianwahab10@gmail.com") {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
       );
     }
+
+    // Get user ID from params
+    const { id: userId } = await params;
+
+    // Check if trying to delete self
+    if (user.id === userId) {
+      return NextResponse.json(
+        { error: "Cannot delete your own account" },
+        { status: 400 }
+      );
+    }
+
+    // Step 2: Use service role for database operations
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
 
     // Check if trying to delete self
     if (user.id === userId) {

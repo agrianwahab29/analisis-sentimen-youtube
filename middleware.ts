@@ -4,17 +4,6 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if accessing admin routes
-  const isAdminRoute = pathname.startsWith("/admin");
-
-  if (!isAdminRoute) {
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
-  }
-
   // Create Supabase client
   let response = NextResponse.next({
     request: {
@@ -53,23 +42,45 @@ export async function middleware(request: NextRequest) {
     error,
   } = await supabase.auth.getUser();
 
+  // Check if accessing admin routes
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isProtectedRoute = isAdminRoute || isDashboardRoute;
+
+  // If not protected route and not logged in, allow access
+  if (!isProtectedRoute) {
+    return response;
+  }
+
+  // Protected routes require login
   if (error || !user) {
-    // Not logged in - redirect to login
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Check if user is admin (agrianwahab10@gmail.com)
-  if (user.email !== "agrianwahab10@gmail.com") {
-    // Not admin - redirect to dashboard
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Check admin access for admin routes
+  if (isAdminRoute && user.email !== "agrianwahab10@gmail.com") {
+    return NextResponse.redirect(new URL("/dashboard/main", request.url));
   }
 
-  // User is admin - allow access
+  // Check if user is suspended for dashboard routes
+  if (isDashboardRoute) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("is_suspended")
+      .eq("id", user.id)
+      .single();
+
+    if (userData?.is_suspended) {
+      return NextResponse.redirect(new URL("/suspended", request.url));
+    }
+  }
+
+  // Allow access
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/dashboard/:path*"],
 };
