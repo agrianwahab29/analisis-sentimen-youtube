@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
 /**
  * PATCH /api/admin/transactions/[id]
@@ -19,31 +20,20 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Initialize Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: "Missing Supabase credentials" },
-        { status: 500 }
-      );
-    }
+    // STEP 1: Cookie-based auth client to verify session
+    const { supabase: sessionClient, responseHeaders } = await createSupabaseRouteHandlerClient();
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: { user }, error: authError } = await sessionClient.auth.getUser();
 
-    // Verify admin access
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
     if (authError || !user) {
       return NextResponse.json(
         { error: "Unauthorized" },
-        { status: 401 }
+        { status: 401, headers: responseHeaders }
       );
     }
 
     // Check if user is admin
-    const { data: userData } = await supabase
+    const { data: userData } = await sessionClient
       .from("users")
       .select("email, role")
       .eq("id", user.id)
@@ -52,9 +42,27 @@ export async function PATCH(
     if (!userData || userData.email !== "agrianwahab10@gmail.com") {
       return NextResponse.json(
         { error: "Admin access required" },
-        { status: 403 }
+        { status: 403, headers: responseHeaders }
       );
     }
+
+    // STEP 2: Service role client for DB operations (bypass RLS)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: "Missing Supabase credentials" },
+        { status: 500, headers: responseHeaders }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     // Parse request body
     const body = await request.json();

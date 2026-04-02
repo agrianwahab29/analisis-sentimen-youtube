@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         .from("transactions")
         .select("*")
         .eq("voucher_code", voucherCode)
-        .eq("payment_status", "pending")
+        .in("payment_status", ["pending", "pending_verification"])
         .single();
       
       if (error || !data) {
@@ -152,6 +152,16 @@ export async function POST(request: NextRequest) {
 
       // Create transaction record
       transaction = await createTransaction(supabase, body, null, user.id);
+    }
+
+    // Idempotency check: skip if already processed
+    if (transaction.payment_status === "paid") {
+      console.log("Transaction already processed, skipping:", transaction.id);
+      return NextResponse.json({
+        success: true,
+        message: "Transaction already processed",
+        transaction_id: transaction.id,
+      });
     }
 
     // Update transaction status to paid

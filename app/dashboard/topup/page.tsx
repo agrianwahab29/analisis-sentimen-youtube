@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Sparkles, Check, Copy, ExternalLink, Loader2, MessageCircle } from "lucide-react";
+import { Sparkles, Check, Copy, ExternalLink, Loader2, MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -47,14 +47,21 @@ export default function TopUpPage() {
   const [transaction, setTransaction] = useState<TransactionData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState("");
 
-  const whatsappNumber = "6282291134197";
+  const adminWhatsAppNumber = "6282291134197";
   const userEmail = user?.email || "user@example.com";
+
+  const isValidWhatsAppNumber = (number: string) => {
+    const cleaned = number.replace(/\D/g, '');
+    return (cleaned.startsWith('08') || cleaned.startsWith('628')) && cleaned.length >= 10;
+  };
 
   const selectedPkg = creditPackages.find((p) => p.id === selectedPackage);
   const totalCredits = selectedPkg ? selectedPkg.credits + selectedPkg.bonus : 0;
 
   const generateWhatsAppUrl = (voucherCode: string) => {
+    const userWADisplay = whatsappNumber || "(belum diisi)";
     const message = `Halo Admin Vidsense AI,
 
 Saya ingin top up kredit dengan detail berikut:
@@ -63,16 +70,26 @@ Saya ingin top up kredit dengan detail berikut:
 💰 Harga: Rp ${selectedPkg?.price.toLocaleString("id-ID")}
 🎫 Kode Voucher: ${voucherCode}
 👤 Email: ${userEmail}
+📱 WhatsApp Saya: ${userWADisplay}
 💳 Metode: GoPay (Transfer)
 
 Saya akan melakukan transfer dan mengirim bukti transfer melalui chat ini.
 
 Terima kasih!`;
 
-    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${adminWhatsAppNumber}?text=${encodeURIComponent(message)}`;
   };
 
   const handleCreateTransaction = async () => {
+    if (!whatsappNumber.trim()) {
+      toast.error("Nomor WhatsApp wajib diisi");
+      return;
+    }
+    if (!isValidWhatsAppNumber(whatsappNumber)) {
+      toast.error("Nomor WhatsApp tidak valid. Gunakan format 08xx atau 628xx (min. 10 digit)");
+      return;
+    }
+
     setIsGenerating(true);
     try {
       // Authentication is handled server-side via cookies (same as /api/auth/session)
@@ -82,7 +99,7 @@ Terima kasih!`;
         headers: { 
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ packageId: selectedPackage }),
+        body: JSON.stringify({ packageId: selectedPackage, whatsappNumber }),
       });
 
       if (!res.ok) {
@@ -251,6 +268,45 @@ Terima kasih!`;
                 <li>Kirim bukti transfer di WhatsApp</li>
                 <li>Admin akan verifikasi dan kredit masuk ke akun Anda</li>
               </ol>
+            </div>
+
+            {/* WhatsApp Number Input */}
+            <div className="space-y-2">
+              <label htmlFor="whatsapp-number" className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                <Phone className="h-4 w-4 text-green-600" />
+                Nomor WhatsApp
+              </label>
+              <input
+                id="whatsapp-number"
+                type="tel"
+                inputMode="numeric"
+                placeholder="Contoh: 081234567890"
+                value={whatsappNumber}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  setWhatsappNumber(val);
+                }}
+                className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors ${
+                  whatsappNumber && !isValidWhatsAppNumber(whatsappNumber)
+                    ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/30"
+                    : whatsappNumber && isValidWhatsAppNumber(whatsappNumber)
+                    ? "border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-green-50/30"
+                    : "border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white"
+                }`}
+              />
+              {whatsappNumber && !isValidWhatsAppNumber(whatsappNumber) && (
+                <p className="text-xs text-red-500">
+                  Nomor harus diawali 08 atau 628, minimal 10 digit
+                </p>
+              )}
+              {whatsappNumber && isValidWhatsAppNumber(whatsappNumber) && (
+                <p className="text-xs text-green-600">
+                  Nomor WhatsApp valid
+                </p>
+              )}
+              <p className="text-xs text-slate-500">
+                Digunakan untuk menghubungi Anda terkait pembayaran
+              </p>
             </div>
 
             {/* Create Transaction Button */}

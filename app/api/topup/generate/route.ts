@@ -62,11 +62,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const { packageId } = body;
+    const { packageId, whatsappNumber } = body;
 
     if (!packageId) {
       return NextResponse.json(
         { error: "Package ID required" },
+        { status: 400 }
+      );
+    }
+
+    if (!whatsappNumber) {
+      return NextResponse.json(
+        { error: "WhatsApp number required" },
+        { status: 400 }
+      );
+    }
+
+    if (!/^(08|628)\d{8,13}$/.test(whatsappNumber)) {
+      return NextResponse.json(
+        { error: "Invalid WhatsApp number format. Must start with 08 or 628" },
         { status: 400 }
       );
     }
@@ -104,7 +118,7 @@ export async function POST(request: Request) {
       payment_method: "whatsapp_gopay",
       payment_status: "pending_verification",
       voucher_code: voucherCode,
-      whatsapp_number: "082291134197",
+      whatsapp_number: whatsappNumber,
     };
 
     console.log("Attempting to insert transaction:", JSON.stringify(transactionData, null, 2));
