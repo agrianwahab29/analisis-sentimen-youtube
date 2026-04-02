@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 interface Transaction {
   id: string;
   user_email: string;
-  user_name: string;
   package_name: string;
   voucher_code: string;
   price: number;
@@ -130,8 +129,7 @@ export function TransactionsTable({
               <tr key={t.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-6 py-4">
                   <div>
-                    <p className="font-medium text-slate-900">{t.user_name || "Unknown"}</p>
-                    <p className="text-sm text-slate-500">{t.user_email}</p>
+                    <p className="font-medium text-slate-900">{t.user_email}</p>
                   </div>
                 </td>
                 <td className="px-6 py-4">

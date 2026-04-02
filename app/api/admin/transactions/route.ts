@@ -56,8 +56,7 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         users!inner (
-          email,
-          name
+          email
         )
       `, { count: "exact" });
 
@@ -83,7 +82,6 @@ export async function GET(request: NextRequest) {
     const transformedTransactions = transactions?.map((t) => ({
       ...t,
       user_email: t.users?.email || "Unknown",
-      user_name: t.users?.name || "Unknown",
     })) || [];
 
     return NextResponse.json({

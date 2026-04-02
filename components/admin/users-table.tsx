@@ -26,7 +26,6 @@ import {
 interface User {
   id: string;
   email: string;
-  name: string | null;
   created_at: string;
   credit_balance: number;
   role: string;
@@ -233,11 +232,10 @@ export function UsersTable({ users, loading, onRefresh }: UsersTableProps) {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-sm">
-                        {(user.name || user.email).charAt(0).toUpperCase()}
+                        {user.email.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">{user.name || "Unknown"}</p>
-                        <p className="text-sm text-slate-500">{user.email}</p>
+                        <p className="font-medium text-slate-900">{user.email}</p>
                       </div>
                     </div>
                   </td>
@@ -412,7 +410,7 @@ export function UsersTable({ users, loading, onRefresh }: UsersTableProps) {
               Hapus Pengguna
             </DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus akun "{selectedUser?.name || selectedUser?.email}"? 
+              Apakah Anda yakin ingin menghapus akun "{selectedUser?.email}"? 
               Tindakan ini tidak dapat dibatalkan.
             </DialogDescription>
           </DialogHeader>

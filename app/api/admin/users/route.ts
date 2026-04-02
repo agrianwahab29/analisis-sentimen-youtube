@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabase
       .from("users")
-      .select("id, email, name, created_at, credit_balance, role, is_approved, is_suspended, suspension_reason", { count: "exact" });
+      .select("id, email, created_at, credit_balance, role, is_approved, is_suspended, suspension_reason", { count: "exact" });
 
     // Add search filter
     if (search) {

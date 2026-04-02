@@ -9,7 +9,6 @@ import { toast } from "sonner";
 interface User {
   id: string;
   email: string;
-  name: string | null;
   created_at: string;
   credit_balance: number;
   role: string;

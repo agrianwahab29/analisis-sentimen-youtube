@@ -9,7 +9,6 @@ import { toast } from "sonner";
 interface Transaction {
   id: string;
   user_email: string;
-  user_name: string;
   package_name: string;
   voucher_code: string;
   price: number;
