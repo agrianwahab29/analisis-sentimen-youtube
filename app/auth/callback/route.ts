@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         await supabase.from("users").insert({
           id: user.id,
           email: user.email,
-          credit_balance: 10,
+          credit_balance: 75,
         });
       }
     } catch (err) {

@@ -64,11 +64,11 @@ export async function POST(
     }
 
     // Log activity
-    await supabase.from("admin_activity").insert({
+    await supabase.from("admin_logs").insert({
       admin_id: user.id,
       action: "approve_user",
-      target_user_id: userId,
-      details: { approved: true },
+      target_id: userId,
+      metadata: { approved: true },
     });
 
     return NextResponse.json({

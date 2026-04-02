@@ -77,11 +77,11 @@ export async function POST(
       }
 
       // Log activity
-      await supabase.from("admin_activity").insert({
+      await supabase.from("admin_logs").insert({
         admin_id: user.id,
         action: "suspend_user",
-        target_user_id: userId,
-        details: { reason },
+        target_id: userId,
+        metadata: { reason },
       });
 
       return NextResponse.json({
@@ -109,11 +109,11 @@ export async function POST(
       }
 
       // Log activity
-      await supabase.from("admin_activity").insert({
+      await supabase.from("admin_logs").insert({
         admin_id: user.id,
         action: "unsuspend_user",
-        target_user_id: userId,
-        details: {},
+        target_id: userId,
+        metadata: {},
       });
 
       return NextResponse.json({

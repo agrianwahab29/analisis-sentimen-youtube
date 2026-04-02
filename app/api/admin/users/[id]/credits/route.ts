@@ -88,11 +88,11 @@ export async function POST(
     }
 
     // Log activity
-    await supabase.from("admin_activity").insert({
+    await supabase.from("admin_logs").insert({
       admin_id: user.id,
       action: "add_credits",
-      target_user_id: userId,
-      details: { credits_added: credits, new_balance: newBalance, notes },
+      target_id: userId,
+      metadata: { credits_added: credits, new_balance: newBalance, notes },
     });
 
     return NextResponse.json({

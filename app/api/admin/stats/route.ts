@@ -66,11 +66,12 @@ export async function GET(request: NextRequest) {
         .select("*", { count: "exact", head: true })
         .eq("is_approved", false),
       
-      // Suspended users
+      // Suspended users (exclude soft-deleted)
       supabase
         .from("users")
         .select("*", { count: "exact", head: true })
-        .eq("is_suspended", true),
+        .eq("is_suspended", true)
+        .neq("suspension_reason", "Account deleted by admin"),
       
       // Active users (approved and not suspended)
       supabase

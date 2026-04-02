@@ -40,8 +40,9 @@ export default function TopUpPage() {
   const selectedPkg = creditPackages.find((p) => p.id === selectedPackage);
   const totalCredits = selectedPkg ? selectedPkg.credits + selectedPkg.bonus : 0;
 
-  const generateWhatsAppUrl = () => {
+  const generateWhatsAppUrl = (voucherCode?: string) => {
     const userWADisplay = whatsappNumber || "(belum diisi)";
+    const voucherLine = voucherCode ? `\n🎟️ Kode Voucher: ${voucherCode}` : "";
     const message = `Halo Admin Vidsense AI,
 
 Saya ingin top up kredit dengan detail berikut:
@@ -50,7 +51,7 @@ Saya ingin top up kredit dengan detail berikut:
 💰 Harga: Rp ${selectedPkg?.price.toLocaleString("id-ID")}
 👤 Email: ${userEmail}
 📱 WhatsApp Saya: ${userWADisplay}
-💳 Metode: GoPay (Transfer)
+💳 Metode: GoPay (Transfer)${voucherLine}
 
 Saya akan melakukan transfer dan mengirim bukti transfer melalui chat ini.
 
@@ -59,7 +60,9 @@ Terima kasih!`;
     return `https://wa.me/${adminWhatsAppNumber}?text=${encodeURIComponent(message)}`;
   };
 
-  const handlePayViaWhatsApp = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePayViaWhatsApp = async () => {
     if (!whatsappNumber.trim()) {
       toast.error("Nomor WhatsApp wajib diisi");
       return;
@@ -69,9 +72,28 @@ Terima kasih!`;
       return;
     }
 
-    const url = generateWhatsAppUrl();
-    window.open(url, "_blank");
-    toast.success("WhatsApp dibuka! Silakan lanjutkan pembayaran.");
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/topup/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packageId: selectedPackage, whatsappNumber }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal membuat transaksi");
+      }
+
+      const url = generateWhatsAppUrl(data.voucher_code);
+      window.open(url, "_blank");
+      toast.success(`Transaksi dibuat! Kode voucher: ${data.voucher_code}. Silakan lanjutkan pembayaran via WhatsApp.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal memproses pembayaran");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
