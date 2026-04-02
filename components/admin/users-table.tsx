@@ -143,7 +143,7 @@ export function UsersTable({ users, loading, onRefresh }: UsersTableProps) {
 
     setIsProcessing(true);
     try {
-      const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}?hard=true`, {
         method: "DELETE",
       });
 

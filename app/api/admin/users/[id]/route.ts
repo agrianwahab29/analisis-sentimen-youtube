@@ -65,14 +65,17 @@ export async function DELETE(
     const hardDelete = searchParams.get("hard") === "true";
 
     if (hardDelete) {
-      // Hard delete: delete from transactions first, then users
-      const { error: txError } = await supabase
-        .from("transactions")
-        .delete()
-        .eq("user_id", userId);
-      
-      if (txError) {
-        console.error("Failed to delete user transactions:", txError);
+      // Hard delete: delete all related data first, then users
+      // Order matters due to FK constraints (all ON DELETE NO ACTION)
+      const deleteResults = await Promise.all([
+        supabase.from("analysis_history").delete().eq("user_id", userId),
+        supabase.from("transactions").delete().eq("user_id", userId),
+        supabase.from("sociabuzz_webhooks").delete().eq("user_id", userId),
+      ]);
+
+      const relErrors = deleteResults.filter(r => r.error);
+      if (relErrors.length > 0) {
+        console.error("Failed to delete user related data:", relErrors.map(r => r.error));
       }
 
       const { error: deleteError } = await supabase
