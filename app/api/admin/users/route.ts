@@ -50,11 +50,10 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
     const search = searchParams.get("search") || "";
 
-    // Build query
+    // Build query — fetch all users, filter soft-deleted in JS
     let query = supabase
       .from("users")
-      .select("id, email, created_at, credit_balance, role, is_approved, is_suspended, suspension_reason", { count: "exact" })
-      .neq("suspension_reason", "Account deleted by admin");
+      .select("id, email, created_at, credit_balance, role, is_approved, is_suspended, suspension_reason", { count: "exact" });
 
     // Add search filter
     if (search) {
@@ -64,7 +63,7 @@ export async function GET(request: NextRequest) {
     // Apply pagination
     query = query.range(offset, offset + limit - 1).order("created_at", { ascending: false });
 
-    const { data: users, error: fetchError, count } = await query;
+    const { data: allUsers, error: fetchError, count } = await query;
 
     if (fetchError) {
       console.error("Failed to fetch users:", fetchError);
@@ -74,9 +73,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const users = (allUsers || []).filter(
+      (u) => u.suspension_reason !== "Account deleted by admin"
+    );
+
     return NextResponse.json({
       success: true,
-      users: users || [],
+      users,
       total: count || 0,
       limit,
       offset,
