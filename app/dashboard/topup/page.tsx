@@ -3,17 +3,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Sparkles, Check, Copy, ExternalLink, Loader2, MessageCircle, Phone } from "lucide-react";
+import { Sparkles, Check, ExternalLink, MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface CreditPackage {
   id: string;
@@ -31,22 +24,9 @@ const creditPackages: CreditPackage[] = [
   { id: "enterprise", name: "Enterprise", price: 100000, credits: 1500, bonus: 500 },
 ];
 
-interface TransactionData {
-  id: string;
-  voucherCode: string;
-  orderId: string;
-  packageName: string;
-  price: number;
-  totalCredits: number;
-}
-
 export default function TopUpPage() {
   const { user } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<string>("standard");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [transaction, setTransaction] = useState<TransactionData | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState("");
 
   const adminWhatsAppNumber = "6282291134197";
@@ -60,7 +40,7 @@ export default function TopUpPage() {
   const selectedPkg = creditPackages.find((p) => p.id === selectedPackage);
   const totalCredits = selectedPkg ? selectedPkg.credits + selectedPkg.bonus : 0;
 
-  const generateWhatsAppUrl = (voucherCode: string) => {
+  const generateWhatsAppUrl = () => {
     const userWADisplay = whatsappNumber || "(belum diisi)";
     const message = `Halo Admin Vidsense AI,
 
@@ -68,7 +48,6 @@ Saya ingin top up kredit dengan detail berikut:
 
 📦 Paket: ${selectedPkg?.name}
 💰 Harga: Rp ${selectedPkg?.price.toLocaleString("id-ID")}
-🎫 Kode Voucher: ${voucherCode}
 👤 Email: ${userEmail}
 📱 WhatsApp Saya: ${userWADisplay}
 💳 Metode: GoPay (Transfer)
@@ -80,7 +59,7 @@ Terima kasih!`;
     return `https://wa.me/${adminWhatsAppNumber}?text=${encodeURIComponent(message)}`;
   };
 
-  const handleCreateTransaction = async () => {
+  const handlePayViaWhatsApp = () => {
     if (!whatsappNumber.trim()) {
       toast.error("Nomor WhatsApp wajib diisi");
       return;
@@ -90,52 +69,9 @@ Terima kasih!`;
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      // Authentication is handled server-side via cookies (same as /api/auth/session)
-      // No need to manually extract and send token
-      const res = await fetch("/api/topup/generate", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ packageId: selectedPackage, whatsappNumber }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error || "Gagal membuat transaksi");
-        return;
-      }
-
-      const data = await res.json();
-      
-      setTransaction({
-        id: data.transaction_id,
-        voucherCode: data.voucher_code,
-        orderId: data.order_id,
-        packageName: data.package?.name || selectedPkg?.name,
-        price: data.package?.price || selectedPkg?.price || 0,
-        totalCredits: data.package?.total_credits || totalCredits,
-      });
-      
-      setIsDialogOpen(true);
-      toast.success("Transaksi berhasil dibuat! Silakan lanjutkan pembayaran via WhatsApp.");
-    } catch (error) {
-      console.error("Failed to create transaction:", error);
-      toast.error("Terjadi kesalahan saat membuat transaksi");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleCopyVoucher = () => {
-    if (transaction) {
-      navigator.clipboard.writeText(transaction.voucherCode);
-      setCopied(true);
-      toast.success("Kode voucher disalin!");
-      setTimeout(() => setCopied(false), 2000);
-    }
+    const url = generateWhatsAppUrl();
+    window.open(url, "_blank");
+    toast.success("WhatsApp dibuka! Silakan lanjutkan pembayaran.");
   };
 
   return (
@@ -262,8 +198,8 @@ Terima kasih!`;
                 Cara Pembayaran:
               </p>
               <ol className="text-sm text-green-700 space-y-1 list-decimal list-inside">
-                <li>Klik tombol "Buat Transaksi" di bawah</li>
-                <li>Klik "Bayar via WhatsApp" untuk chat admin</li>
+                <li>Isi nomor WhatsApp Anda di bawah</li>
+                <li>Klik tombol "Bayar via WhatsApp"</li>
                 <li>Lakukan transfer GoPay ke nomor <strong>082291134197</strong></li>
                 <li>Kirim bukti transfer di WhatsApp</li>
                 <li>Admin akan verifikasi dan kredit masuk ke akun Anda</li>
@@ -309,120 +245,18 @@ Terima kasih!`;
               </p>
             </div>
 
-            {/* Create Transaction Button */}
+            {/* Pay via WhatsApp Button */}
             <Button
-              onClick={handleCreateTransaction}
-              disabled={isGenerating}
+              onClick={handlePayViaWhatsApp}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg shadow-green-500/25"
               size="lg"
             >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Membuat Transaksi...
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Buat Transaksi & Bayar via WhatsApp
-                </>
-              )}
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Bayar via WhatsApp
+              <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </motion.div>
-
-        {/* Payment Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="font-heading flex items-center gap-2">
-                <MessageCircle className="h-5 w-5 text-green-600" />
-                Pembayaran WhatsApp GoPay
-              </DialogTitle>
-              <DialogDescription>
-                Transaksi berhasil dibuat. Lanjutkan pembayaran via WhatsApp.
-              </DialogDescription>
-            </DialogHeader>
-
-            {transaction && (
-              <div className="space-y-4">
-                {/* Package Summary */}
-                <div className="rounded-lg bg-slate-50 p-4 border border-slate-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-600">Paket</span>
-                    <span className="font-semibold text-slate-900">
-                      {transaction.packageName}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-600">Kredit</span>
-                    <span className="font-bold text-green-600 text-lg">
-                      {transaction.totalCredits} kredit
-                    </span>
-                  </div>
-                  <div className="border-t border-slate-200 pt-2 mt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-slate-900">Total</span>
-                      <span className="text-xl font-bold text-green-600">
-                        Rp {transaction.price.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Voucher Code */}
-                <div className="rounded-lg border-2 border-dashed border-green-300 bg-green-50 p-4">
-                  <p className="text-sm text-green-800 mb-2 font-medium">
-                    Kode Voucher:
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded-lg bg-white px-4 py-3 text-lg font-mono font-bold text-green-600 border border-green-200 text-center">
-                      {transaction.voucherCode}
-                    </code>
-                    <Button
-                      onClick={handleCopyVoucher}
-                      variant="outline"
-                      size="icon"
-                      className="shrink-0"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* WhatsApp Instructions */}
-                <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 space-y-2">
-                  <p className="text-sm font-semibold text-amber-800">
-                    Langkah Selanjutnya:
-                  </p>
-                  <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
-                    <li>Klik tombol WhatsApp di bawah</li>
-                    <li>Chat akan terbuka dengan pesan otomatis</li>
-                    <li>Transfer GoPay ke <strong>082291134197</strong></li>
-                    <li>Kirim bukti transfer di chat</li>
-                    <li>Tunggu admin verifikasi (1-24 jam)</li>
-                  </ol>
-                </div>
-
-                {/* WhatsApp Button */}
-                <a
-                  href={generateWhatsAppUrl(transaction.voucherCode)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green-500/25 transition-all hover:from-green-700 hover:to-green-800"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Bayar via WhatsApp
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-
-                <p className="text-center text-xs text-slate-500">
-                  Kredit akan masuk setelah admin verifikasi pembayaran
-                </p>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </DashboardLayout>
   );
