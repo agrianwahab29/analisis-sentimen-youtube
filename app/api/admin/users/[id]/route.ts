@@ -60,30 +60,67 @@ export async function DELETE(
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    // Check if trying to delete self
-    if (user.id === userId) {
-      return NextResponse.json(
-        { error: "Cannot delete your own account" },
-        { status: 400 }
-      );
-    }
-
     // Check for hard delete query param
     const { searchParams } = new URL(request.url);
     const hardDelete = searchParams.get("hard") === "true";
 
-    // Call delete_user function
-    const { error: deleteError } = await supabase.rpc("delete_user", {
-      user_uuid: userId,
-      hard_delete: hardDelete,
-    });
+    if (hardDelete) {
+      // Hard delete: delete from transactions first, then users
+      const { error: txError } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("user_id", userId);
+      
+      if (txError) {
+        console.error("Failed to delete user transactions:", txError);
+      }
 
-    if (deleteError) {
-      console.error("Failed to delete user:", deleteError);
-      return NextResponse.json(
-        { error: "Failed to delete user" },
-        { status: 500 }
-      );
+      const { error: deleteError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", userId);
+
+      if (deleteError) {
+        console.error("Failed to delete user:", deleteError);
+        return NextResponse.json(
+          { error: "Failed to delete user" },
+          { status: 500 }
+        );
+      }
+
+      // Log admin action
+      await supabase.from("admin_logs").insert({
+        admin_id: user.id,
+        action: "hard_delete_user",
+        target_id: userId,
+        metadata: { action: "hard_delete_user", user_id: userId }
+      });
+    } else {
+      // Soft delete: mark as suspended
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({
+          is_suspended: true,
+          suspension_reason: "Account deleted by admin",
+          suspended_at: new Date().toISOString()
+        })
+        .eq("id", userId);
+
+      if (updateError) {
+        console.error("Failed to suspend user:", updateError);
+        return NextResponse.json(
+          { error: "Failed to delete user" },
+          { status: 500 }
+        );
+      }
+
+      // Log admin action
+      await supabase.from("admin_logs").insert({
+        admin_id: user.id,
+        action: "soft_delete_user",
+        target_id: userId,
+        metadata: { action: "soft_delete_user", user_id: userId }
+      });
     }
 
     return NextResponse.json({
