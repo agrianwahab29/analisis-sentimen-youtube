@@ -1,8 +1,30 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  const { supabase, responseHeaders } = await createSupabaseRouteHandlerClient();
+  const cookieStore = await cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Server Component — cannot set cookies
+          }
+        },
+      },
+    },
+  );
 
   const {
     data: { user },
@@ -18,9 +40,7 @@ export async function GET() {
     creditBalance = profile?.credit_balance ?? 0;
   }
 
-  const response = NextResponse.json({
+  return NextResponse.json({
     user: user ? { ...user, credit_balance: creditBalance } : null,
   });
-  responseHeaders.forEach((value, key) => response.headers.set(key, value));
-  return response;
 }
