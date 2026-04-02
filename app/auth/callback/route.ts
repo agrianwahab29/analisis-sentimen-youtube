@@ -1,5 +1,6 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -10,10 +11,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login?error=no_code", origin));
   }
 
-  // Use route handler client with async cookies
-  const { supabase, responseHeaders } = await createSupabaseRouteHandlerClient();
+  const cookieStore = await cookies();
 
-  // Exchange code for session - this sets the session cookies
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Server Component — cannot set cookies, ignore
+          }
+        },
+      },
+    },
+  );
+
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
@@ -21,9 +41,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login?error=auth_failed", origin));
   }
 
-  // Get the user and create user record if needed
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (user) {
     try {
       const { data: existingUser } = await supabase
@@ -41,12 +60,8 @@ export async function GET(request: NextRequest) {
       }
     } catch (err) {
       console.error("Error creating user:", err);
-      // Continue anyway - user is authenticated
     }
   }
 
-  // Return redirect with session cookies set
-  const response = NextResponse.redirect(new URL(next, origin));
-  responseHeaders.forEach((value, key) => response.headers.set(key, value));
-  return response;
+  return NextResponse.redirect(new URL(next, origin));
 }
