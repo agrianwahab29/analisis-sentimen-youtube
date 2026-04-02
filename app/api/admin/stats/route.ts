@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 
 /**
  * GET /api/admin/stats
@@ -10,42 +11,40 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Initialize Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    // Step 1: Verify admin via session (using route handler client)
+    const { supabase: sessionClient } = await createSupabaseRouteHandlerClient();
+    const { data: { user }, error: sessionError } = await sessionClient.auth.getUser();
     
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (sessionError || !user) {
       return NextResponse.json(
-        { error: "Missing Supabase credentials" },
-        { status: 500 }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Verify admin access
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - Please login" },
         { status: 401 }
       );
     }
 
     // Check if user is admin
-    const { data: userData } = await supabase
-      .from("users")
-      .select("email, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!userData || userData.email !== "agrianwahab10@gmail.com") {
+    if (user.email !== "agrianwahab10@gmail.com") {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
       );
     }
+
+    // Step 2: Use service role for database operations (bypass RLS)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase credentials:", { url: !!supabaseUrl, key: !!supabaseServiceKey });
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
 
     // Get statistics
     const [
@@ -100,7 +99,7 @@ export async function GET(request: NextRequest) {
         .from("transactions")
         .select("price", { count: "exact" })
         .eq("payment_status", "paid")
-        .gte("created_at", new Date(new Date().setDate(1)).toISOString()) // First day of this month
+        .gte("created_at", new Date(new Date().setDate(1)).toISOString())
     ]);
 
     // Calculate revenue totals
