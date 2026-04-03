@@ -77,7 +77,7 @@ declare module "@supabase/supabase-js" {
           Row: {
             id: string;
             user_id: string;
-            type: "credit_purchase" | "analysis" | "refund";
+            type: "topup" | "analysis" | "refund";
             amount: number;
             description: string;
             created_at: string;
@@ -85,7 +85,7 @@ declare module "@supabase/supabase-js" {
           Insert: {
             id?: string;
             user_id: string;
-            type: "credit_purchase" | "analysis" | "refund";
+            type: "topup" | "analysis" | "refund";
             amount: number;
             description: string;
             created_at?: string;

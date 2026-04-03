@@ -108,8 +108,8 @@ export async function POST(request: Request) {
     // Prepare transaction data
     const transactionData = {
       user_id: user.id,
-      // Required by transactions.type NOT NULL constraint
-      type: "credit_purchase",
+      // Must match CHECK constraint transactions_type_check
+      type: "topup",
       order_id: orderId,
       package_id: packageId,
       package_name: pkg.name,

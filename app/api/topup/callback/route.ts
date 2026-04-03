@@ -270,8 +270,8 @@ async function createTransaction(
     .from("transactions")
     .insert({
       user_id,
-      // Required by transactions.type NOT NULL constraint
-      type: "credit_purchase",
+      // Must match CHECK constraint transactions_type_check
+      type: "topup",
       order_id: order_id || `SOC-${Date.now()}`,
       // Required by transactions.amount NOT NULL constraint
       amount,

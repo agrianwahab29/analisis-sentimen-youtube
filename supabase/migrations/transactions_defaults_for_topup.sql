@@ -19,7 +19,7 @@ BEGIN
     WHERE table_name = 'transactions'
       AND column_name = 'type'
   ) THEN
-    ALTER TABLE transactions ALTER COLUMN type SET DEFAULT 'credit_purchase';
+    ALTER TABLE transactions ALTER COLUMN type SET DEFAULT 'topup';
   END IF;
 END $$;
 
