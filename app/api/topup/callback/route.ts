@@ -273,6 +273,8 @@ async function createTransaction(
       // Required by transactions.type NOT NULL constraint
       type: "credit_purchase",
       order_id: order_id || `SOC-${Date.now()}`,
+      // Required by transactions.amount NOT NULL constraint
+      amount,
       package_id: pkg.package_id,
       package_name: pkg.package_name,
       credits_amount: pkg.credits,

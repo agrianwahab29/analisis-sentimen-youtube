@@ -116,6 +116,8 @@ export async function POST(request: Request) {
       credits_amount: pkg.credits,
       bonus_credits: pkg.bonus,
       total_credits: pkg.credits + pkg.bonus,
+      // Required by transactions.amount NOT NULL constraint
+      amount: pkg.price,
       price: pkg.price,
       payment_method: "whatsapp_gopay",
       payment_status: "pending_verification",
