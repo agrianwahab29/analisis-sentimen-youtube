@@ -25,11 +25,17 @@ export async function POST(
       );
     }
 
-    if (user.email !== "agrianwahab10@gmail.com") {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      );
+    const { data: userData } = await sessionClient
+      .from("users")
+      .select("role,email")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const isAdmin =
+      userData?.role === "admin" || user.email === "agrianwahab10@gmail.com";
+
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
     // Step 2: Use service role for database operations

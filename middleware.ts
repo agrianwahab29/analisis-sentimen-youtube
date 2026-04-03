@@ -60,8 +60,19 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check admin access for admin routes
-  if (isAdminRoute && user.email !== "agrianwahab10@gmail.com") {
-    return NextResponse.redirect(new URL("/dashboard/main", request.url));
+  if (isAdminRoute) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role,email")
+      .eq("id", user.id)
+      .single();
+
+    const isAdmin =
+      userData?.role === "admin" || user.email === "agrianwahab10@gmail.com";
+
+    if (!isAdmin) {
+      return NextResponse.redirect(new URL("/dashboard/main", request.url));
+    }
   }
 
   // Check if user is suspended for dashboard routes

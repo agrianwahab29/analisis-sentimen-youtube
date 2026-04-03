@@ -39,11 +39,11 @@ export async function PATCH(
       .eq("id", user.id)
       .single();
 
-    if (!userData || userData.email !== "agrianwahab10@gmail.com") {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403, headers: responseHeaders }
-      );
+    const isAdmin =
+      !!userData && (userData.role === "admin" || userData.email === "agrianwahab10@gmail.com");
+
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403, headers: responseHeaders });
     }
 
     // STEP 2: Service role client for DB operations (bypass RLS)
