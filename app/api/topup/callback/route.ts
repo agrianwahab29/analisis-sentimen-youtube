@@ -270,6 +270,8 @@ async function createTransaction(
     .from("transactions")
     .insert({
       user_id,
+      // Required by transactions.type NOT NULL constraint
+      type: "credit_purchase",
       order_id: order_id || `SOC-${Date.now()}`,
       package_id: pkg.package_id,
       package_name: pkg.package_name,
