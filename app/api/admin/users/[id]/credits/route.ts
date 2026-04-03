@@ -25,14 +25,14 @@ export async function POST(
       );
     }
 
-    const { data: userData } = await sessionClient
+    const { data: adminUserData } = await sessionClient
       .from("users")
       .select("role,email")
       .eq("id", user.id)
       .maybeSingle();
 
     const isAdmin =
-      userData?.role === "admin" || user.email === "agrianwahab10@gmail.com";
+      adminUserData?.role === "admin" || user.email === "agrianwahab10@gmail.com";
 
     if (!isAdmin) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
