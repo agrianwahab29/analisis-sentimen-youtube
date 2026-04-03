@@ -271,7 +271,7 @@ function AnalysisContent() {
                 {tab.label}
                 {tab.id === "comments" && (
                   <span className="ml-1 px-2 py-0.5 rounded-full bg-slate-100 text-xs text-slate-600">
-                    {result.comments.length}
+                    {result.comments.length}/{result.sentimentStats.total}
                   </span>
                 )}
               </button>
@@ -378,7 +378,8 @@ function AnalysisContent() {
               </div>
 
               <span className="text-sm text-slate-500">
-                Menampilkan {filteredComments.length} komentar
+                Menampilkan {filteredComments.length} dari {result.comments.length} sampel komentar
+                {" "}({result.sentimentStats.total.toLocaleString("id-ID")} total dianalisis)
               </span>
             </motion.div>
 
