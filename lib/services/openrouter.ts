@@ -13,7 +13,7 @@ interface CommentSummary {
 export async function generateAIInsight(
   videoInfo: { title: string; totalComments: number },
   sentimentStats: { positive: number; negative: number; neutral: number },
-  comments: { text: string; sentiment: string }[],
+  comments: { text: string; sentiment: string; likes?: number; confidence?: number }[],
   apiKey?: string
 ): Promise<AIInsightResult | null> {
   try {
@@ -22,13 +22,29 @@ export async function generateAIInsight(
       return generateMockInsight(videoInfo, sentimentStats);
     }
 
-    // Sample comments for analysis
+    // Sample comments for analysis: prioritize high-signal comments.
+    const sortBySignal = (
+      a: { likes?: number; confidence?: number },
+      b: { likes?: number; confidence?: number }
+    ) => {
+      const aScore = (a.likes ?? 0) * 0.2 + (a.confidence ?? 0) * 100;
+      const bScore = (b.likes ?? 0) * 0.2 + (b.confidence ?? 0) * 100;
+      return bScore - aScore;
+    };
+
     const positiveComments = comments
       .filter((c) => c.sentiment === "positive")
+      .sort(sortBySignal)
       .slice(0, 5)
       .map((c) => c.text);
     const negativeComments = comments
       .filter((c) => c.sentiment === "negative")
+      .sort(sortBySignal)
+      .slice(0, 5)
+      .map((c) => c.text);
+    const neutralComments = comments
+      .filter((c) => c.sentiment === "neutral")
+      .sort(sortBySignal)
       .slice(0, 5)
       .map((c) => c.text);
 
@@ -46,6 +62,9 @@ ${positiveComments.map((c, i) => `${i + 1}. ${c}`).join("\n")}
 Contoh Komentar Negatif:
 ${negativeComments.map((c, i) => `${i + 1}. ${c}`).join("\n")}
 
+Contoh Komentar Netral:
+${neutralComments.map((c, i) => `${i + 1}. ${c}`).join("\n")}
+
 Berikan analisis dalam format berikut (gunakan Bahasa Indonesia):
 
 1. Ringkasan: [Ringkasan singkat tentang sentimen penonton]
@@ -55,7 +74,7 @@ Berikan analisis dalam format berikut (gunakan Bahasa Indonesia):
 - [Keluhan 2]
 - [Keluhan 3]
 
-3. Saran Konten Berikutnya (maksimal 3):
+3. Saran Konten Berikutnya (maksimal 3, spesifik dan bisa dieksekusi):
 - [Saran 1]
 - [Saran 2]
 - [Saran 3]`;
@@ -76,7 +95,7 @@ Berikan analisis dalam format berikut (gunakan Bahasa Indonesia):
             {
               role: "system",
               content:
-                "Kamu adalah AI analis sentimen yang membantu content creator memahami komentar penonton mereka. Berikan analisis yang objektif dan konstruktif dalam Bahasa Indonesia.",
+                "Kamu adalah AI analis sentimen senior untuk content creator YouTube. Jawaban harus spesifik, berbasis data, non-generik, dan langsung bisa ditindaklanjuti. Hindari saran klise. Gunakan Bahasa Indonesia.",
             },
             { role: "user", content: prompt },
           ],

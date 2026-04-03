@@ -98,7 +98,7 @@ export async function getVideoComments(
       console.log(`Fetching page ${pageCount}, current comments: ${comments.length}`);
       
       const response: { data: youtube_v3.Schema$CommentThreadListResponse } = await getYouTubeClient().commentThreads.list({
-        part: ["snippet"],
+        part: ["snippet", "replies"],
         videoId: videoId,
         maxResults: Math.min(100, maxResults - comments.length),
         pageToken: nextPageToken,
@@ -113,6 +113,7 @@ export async function getVideoComments(
       }
 
       for (const item of items) {
+        if (comments.length >= maxResults) break;
         const commentSnippet = item.snippet?.topLevelComment?.snippet;
         if (commentSnippet) {
           comments.push({
@@ -122,6 +123,61 @@ export async function getVideoComments(
             likeCount: commentSnippet.likeCount || 0,
             publishedAt: commentSnippet.publishedAt || "",
           });
+        }
+
+        if (comments.length >= maxResults) break;
+
+        // Include reply comments as well (to align with YouTube comment count closer).
+        const inlineReplies = item.replies?.comments ?? [];
+        for (const reply of inlineReplies) {
+          if (comments.length >= maxResults) break;
+          const replySnippet = reply.snippet;
+          if (!replySnippet) continue;
+          comments.push({
+            id: reply.id || "",
+            author: replySnippet.authorDisplayName || "",
+            text: replySnippet.textDisplay || "",
+            likeCount: replySnippet.likeCount || 0,
+            publishedAt: replySnippet.publishedAt || "",
+          });
+        }
+
+        // If there are more replies than inline payload, fetch the rest by parentId.
+        const totalReplyCount = item.snippet?.totalReplyCount || 0;
+        if (
+          comments.length < maxResults &&
+          totalReplyCount > inlineReplies.length &&
+          item.snippet?.topLevelComment?.id
+        ) {
+          let replyPageToken: string | undefined = undefined;
+          do {
+            const remaining = maxResults - comments.length;
+            if (remaining <= 0) break;
+
+            const replyResponse: { data: youtube_v3.Schema$CommentListResponse } =
+              await getYouTubeClient().comments.list({
+                part: ["snippet"],
+                parentId: item.snippet.topLevelComment.id,
+                maxResults: Math.min(100, remaining),
+                pageToken: replyPageToken,
+              });
+
+            const replyItems = replyResponse.data.items || [];
+            for (const reply of replyItems) {
+              if (comments.length >= maxResults) break;
+              const replySnippet = reply.snippet;
+              if (!replySnippet) continue;
+              comments.push({
+                id: reply.id || "",
+                author: replySnippet.authorDisplayName || "",
+                text: replySnippet.textDisplay || "",
+                likeCount: replySnippet.likeCount || 0,
+                publishedAt: replySnippet.publishedAt || "",
+              });
+            }
+
+            replyPageToken = replyResponse.data.nextPageToken || undefined;
+          } while (replyPageToken && comments.length < maxResults);
         }
       }
 
