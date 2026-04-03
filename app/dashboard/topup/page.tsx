@@ -39,6 +39,7 @@ export default function TopUpPage() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [transactions, setTransactions] = useState<UserTransaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [transactionErrorShown, setTransactionErrorShown] = useState(false);
 
   const adminWhatsAppNumber = "6282291134197";
   const userEmail = user?.email || "user@example.com";
@@ -91,12 +92,18 @@ Terima kasih!`;
         throw new Error(data.error || "Gagal memuat riwayat top up");
       }
       setTransactions(data.transactions ?? []);
+      setTransactionErrorShown(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Gagal memuat riwayat top up");
+      if (!transactionErrorShown) {
+        toast.error(
+          error instanceof Error ? error.message : "Gagal memuat riwayat top up"
+        );
+        setTransactionErrorShown(true);
+      }
     } finally {
       setLoadingTransactions(false);
     }
-  }, []);
+  }, [transactionErrorShown]);
 
   useEffect(() => {
     fetchTransactions();
