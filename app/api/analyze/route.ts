@@ -12,6 +12,7 @@ import {
 } from "@/lib/services/huggingface";
 import { generateAIInsight } from "@/lib/services/openrouter";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { normalizeCreditBalance } from "@/lib/normalize-credit-balance";
 
 export async function POST(request: NextRequest) {
@@ -41,12 +42,29 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     const requiredCredits = isPremium ? 15 : 5;
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    const adminClient =
+      supabaseUrl && serviceKey
+        ? createClient(supabaseUrl, serviceKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          })
+        : null;
+
     if (user) {
-      const { data: profile } = await supabase
-        .from("users")
-        .select("credit_balance")
-        .eq("id", user.id)
-        .single();
+      const { data: profile } = adminClient
+        ? await adminClient
+            .from("users")
+            .select("credit_balance")
+            .eq("id", user.id)
+            .maybeSingle()
+        : await supabase
+            .from("users")
+            .select("credit_balance")
+            .eq("id", user.id)
+            .maybeSingle();
+
       const balance = normalizeCreditBalance(profile?.credit_balance);
       if (balance < requiredCredits) {
         return NextResponse.json(
@@ -152,17 +170,25 @@ export async function POST(request: NextRequest) {
     // Deduct credits
     try {
       if (user) {
-        const { data: currentProfile } = await supabase
-          .from("users")
-          .select("credit_balance")
-          .eq("id", user.id)
-          .single();
+        const { data: currentProfile } = adminClient
+          ? await adminClient
+              .from("users")
+              .select("credit_balance")
+              .eq("id", user.id)
+              .maybeSingle()
+          : await supabase
+              .from("users")
+              .select("credit_balance")
+              .eq("id", user.id)
+              .maybeSingle();
+
         if (currentProfile) {
           const newBalance = Math.max(
             0,
             normalizeCreditBalance(currentProfile.credit_balance) - creditsUsed
           );
-          const { error: updateError } = await supabase
+          const creditsUpdateClient = adminClient ?? supabase;
+          const { error: updateError } = await creditsUpdateClient
             .from("users")
             .update({ credit_balance: newBalance })
             .eq("id", user.id);
