@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp, Lightbulb, AlertTriangle, MessageSquare } from "lucide-react";
+import { sanitizeInsightPlainText } from "@/lib/utils/insight-plain-text";
 
 interface AIInsightProps {
   summary: string;
@@ -12,6 +13,16 @@ interface AIInsightProps {
 
 export function AIInsight({ summary, complaints, suggestions }: AIInsightProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+
+  const cleanSummary = useMemo(() => sanitizeInsightPlainText(summary), [summary]);
+  const cleanComplaints = useMemo(
+    () => complaints.map((c) => sanitizeInsightPlainText(c)),
+    [complaints]
+  );
+  const cleanSuggestions = useMemo(
+    () => suggestions.map((s) => sanitizeInsightPlainText(s)),
+    [suggestions]
+  );
 
   return (
     <motion.div
@@ -56,24 +67,24 @@ export function AIInsight({ summary, complaints, suggestions }: AIInsightProps) 
         >
           {/* Summary */}
           <div className="bg-white/60 rounded-lg p-4 border border-amber-100">
-            <p className="text-slate-700 leading-relaxed">{summary}</p>
+            <p className="text-slate-700 leading-relaxed whitespace-pre-line">{cleanSummary}</p>
           </div>
 
           {/* Complaints */}
-          {complaints.length > 0 && (
+          {cleanComplaints.length > 0 && (
             <div className="bg-white/60 rounded-lg p-4 border border-red-100">
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle className="h-4 w-4 text-rose-500" />
                 <h4 className="font-semibold text-slate-900">Keluhan Utama</h4>
               </div>
               <ul className="space-y-2">
-                {complaints.map((complaint, index) => (
+                {cleanComplaints.map((complaint, index) => (
                   <li
                     key={index}
                     className="flex items-start gap-2 text-sm text-slate-600"
                   >
                     <span className="text-rose-400 mt-1">•</span>
-                    {complaint}
+                    <span className="whitespace-pre-line">{complaint}</span>
                   </li>
                 ))}
               </ul>
@@ -81,7 +92,7 @@ export function AIInsight({ summary, complaints, suggestions }: AIInsightProps) 
           )}
 
           {/* Suggestions */}
-          {suggestions.length > 0 && (
+          {cleanSuggestions.length > 0 && (
             <div className="bg-white/60 rounded-lg p-4 border border-emerald-100">
               <div className="flex items-center gap-2 mb-3">
                 <MessageSquare className="h-4 w-4 text-emerald-500" />
@@ -90,13 +101,13 @@ export function AIInsight({ summary, complaints, suggestions }: AIInsightProps) 
                 </h4>
               </div>
               <ul className="space-y-2">
-                {suggestions.map((suggestion, index) => (
+                {cleanSuggestions.map((suggestion, index) => (
                   <li
                     key={index}
                     className="flex items-start gap-2 text-sm text-slate-600"
                   >
                     <span className="text-emerald-400 mt-1">→</span>
-                    {suggestion}
+                    <span className="whitespace-pre-line">{suggestion}</span>
                   </li>
                 ))}
               </ul>

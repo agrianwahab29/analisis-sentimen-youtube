@@ -1,7 +1,17 @@
+import { sanitizeInsightPlainText } from "@/lib/utils/insight-plain-text";
+
 export interface AIInsightResult {
   summary: string;
   complaints: string[];
   suggestions: string[];
+}
+
+function sanitizeInsightResult(data: AIInsightResult): AIInsightResult {
+  return {
+    summary: sanitizeInsightPlainText(data.summary),
+    complaints: data.complaints.map(sanitizeInsightPlainText),
+    suggestions: data.suggestions.map(sanitizeInsightPlainText),
+  };
 }
 
 interface CommentSummary {
@@ -19,7 +29,9 @@ export async function generateAIInsight(
   try {
     // If no API key provided, return mock data for development
     if (!apiKey) {
-      return generateMockInsight(videoInfo, sentimentStats, comments);
+      return sanitizeInsightResult(
+        generateMockInsight(videoInfo, sentimentStats, comments)
+      );
     }
 
     // Sample comments for analysis: prioritize high-signal comments.
@@ -65,7 +77,7 @@ ${negativeComments.map((c, i) => `${i + 1}. ${c}`).join("\n")}
 Contoh Komentar Netral:
 ${neutralComments.map((c, i) => `${i + 1}. ${c}`).join("\n")}
 
-Berikan analisis dalam format berikut (gunakan Bahasa Indonesia):
+Berikan analisis dalam format berikut (gunakan Bahasa Indonesia, tanpa HTML/Markdown):
 
 1. Ringkasan: [Ringkasan singkat tentang sentimen penonton]
 
@@ -95,7 +107,7 @@ Berikan analisis dalam format berikut (gunakan Bahasa Indonesia):
             {
               role: "system",
               content:
-                "Kamu adalah AI analis sentimen senior untuk content creator YouTube. Jawaban harus spesifik, berbasis data, non-generik, dan langsung bisa ditindaklanjuti. Hindari saran klise. Gunakan Bahasa Indonesia.",
+                "Kamu adalah AI analis sentimen senior untuk content creator YouTube. Jawaban harus spesifik, berbasis data, non-generik, dan langsung bisa ditindaklanjuti. Hindari saran klise. Gunakan Bahasa Indonesia. PENTING: tulis hanya teks biasa (plain text). Jangan gunakan HTML, tag apa pun (<a>, <br>, <p>, dan lainnya), Markdown, atau kode. Jangan sertakan tautan atau markup — cukup kalimat biasa.",
             },
             { role: "user", content: prompt },
           ],
@@ -112,12 +124,13 @@ Berikan analisis dalam format berikut (gunakan Bahasa Indonesia):
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
 
-    // Parse the response
-    return parseAIResponse(content);
+    return sanitizeInsightResult(parseAIResponse(content));
   } catch (error) {
     console.error("Error generating AI insight:", error);
     // Return data-driven fallback when LLM is unavailable
-    return generateMockInsight(videoInfo, sentimentStats, comments);
+    return sanitizeInsightResult(
+      generateMockInsight(videoInfo, sentimentStats, comments)
+    );
   }
 }
 
