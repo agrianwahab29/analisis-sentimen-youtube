@@ -154,7 +154,12 @@ Terima kasih!`;
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Gagal membuat transaksi");
+        const parts: string[] = [];
+        if (data?.error) parts.push(String(data.error));
+        if (data?.details) parts.push(`Details: ${String(data.details)}`);
+        if (data?.code) parts.push(`Code: ${String(data.code)}`);
+        if (data?.hint) parts.push(`Hint: ${String(data.hint)}`);
+        throw new Error(parts.length ? parts.join(" | ") : "Gagal membuat transaksi");
       }
 
       const url = generateWhatsAppUrl(data.voucher_code);
