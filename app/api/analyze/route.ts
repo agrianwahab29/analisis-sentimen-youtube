@@ -12,6 +12,7 @@ import {
 } from "@/lib/services/huggingface";
 import { generateAIInsight } from "@/lib/services/openrouter";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
+import { normalizeCreditBalance } from "@/lib/normalize-credit-balance";
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
         .select("credit_balance")
         .eq("id", user.id)
         .single();
-      const balance = profile?.credit_balance ?? 0;
+      const balance = normalizeCreditBalance(profile?.credit_balance);
       if (balance < requiredCredits) {
         return NextResponse.json(
           { error: `Kredit tidak cukup. Butuh ${requiredCredits} kredit, saldo Anda ${balance}.` },
@@ -157,7 +158,10 @@ export async function POST(request: NextRequest) {
           .eq("id", user.id)
           .single();
         if (currentProfile) {
-          const newBalance = Math.max(0, (currentProfile.credit_balance ?? 0) - creditsUsed);
+          const newBalance = Math.max(
+            0,
+            normalizeCreditBalance(currentProfile.credit_balance) - creditsUsed
+          );
           const { error: updateError } = await supabase
             .from("users")
             .update({ credit_balance: newBalance })
@@ -166,7 +170,9 @@ export async function POST(request: NextRequest) {
           if (updateError) {
             console.error("Failed to update credits:", updateError);
           } else {
-            console.log(`Credits updated: ${currentProfile.credit_balance} -> ${newBalance}`);
+            console.log(
+              `Credits updated: ${normalizeCreditBalance(currentProfile.credit_balance)} -> ${newBalance}`
+            );
           }
         }
       }

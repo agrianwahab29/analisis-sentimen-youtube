@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BadgeCheck, Calendar, Mail, Activity, Zap, Coins, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { normalizeCreditBalance } from "@/lib/normalize-credit-balance";
 import { motion } from "framer-motion";
 
 interface UserStats {
@@ -28,9 +29,9 @@ export default function ProfilePage() {
   const email = user?.email ?? "user@email.com";
   const displayName = email.split("@")[0];
   const initial = email.charAt(0).toUpperCase();
-  const creditBalance = typeof (user as Record<string, unknown>)?.credit_balance === "number"
-    ? ((user as Record<string, unknown>).credit_balance as number)
-    : 0;
+  const creditBalance = normalizeCreditBalance(
+    user ? (user as Record<string, unknown>).credit_balance : undefined
+  );
 
   useEffect(() => {
     async function fetchStats() {

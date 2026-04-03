@@ -4,8 +4,8 @@ import { ReactNode } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Sidebar } from "./sidebar";
-import { CreditBadge } from "./credit-badge";
 import { useAuth } from "@/hooks/use-auth";
+import { normalizeCreditBalance } from "@/lib/normalize-credit-balance";
 import { Sparkles } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -14,9 +14,9 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
-  const credits = typeof (user as Record<string, unknown>)?.credit_balance === "number"
-    ? ((user as Record<string, unknown>).credit_balance as number)
-    : 0;
+  const credits = normalizeCreditBalance(
+    user ? (user as Record<string, unknown>).credit_balance : undefined
+  );
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">

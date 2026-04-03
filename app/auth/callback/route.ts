@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -45,18 +46,38 @@ export async function GET(request: NextRequest) {
 
   if (user) {
     try {
-      const { data: existingUser } = await supabase
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (!supabaseUrl || !serviceKey) {
+        throw new Error("Missing Supabase service credentials");
+      }
+
+      // Use service role to avoid RLS insert/select issues during first login.
+      const adminClient = createClient(supabaseUrl, serviceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      const { data: existingUser, error: existingUserError } = await adminClient
         .from("users")
         .select("id")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (!existingUser) {
-        await supabase.from("users").insert({
-          id: user.id,
-          email: user.email,
-          credit_balance: 75,
-        });
+      if (existingUserError) {
+        throw existingUserError;
+      }
+
+      const payload = existingUser
+        ? { id: user.id, email: user.email }
+        : { id: user.id, email: user.email, credit_balance: 75 };
+
+      const { error: upsertError } = await adminClient
+        .from("users")
+        .upsert(payload, { onConflict: "id" });
+
+      if (upsertError) {
+        throw upsertError;
       }
     } catch (err) {
       console.error("Error creating user:", err);

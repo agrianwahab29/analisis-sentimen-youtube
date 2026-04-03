@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Sparkles, Check, ExternalLink, MessageCircle, Phone } from "lucide-react";
@@ -17,6 +17,15 @@ interface CreditPackage {
   popular?: boolean;
 }
 
+interface UserTransaction {
+  id: string;
+  package_name: string;
+  total_credits: number;
+  price: number;
+  payment_status: string;
+  created_at: string;
+}
+
 const creditPackages: CreditPackage[] = [
   { id: "basic", name: "Basic", price: 10000, credits: 100, bonus: 0 },
   { id: "standard", name: "Standard", price: 25000, credits: 300, bonus: 20, popular: true },
@@ -25,9 +34,11 @@ const creditPackages: CreditPackage[] = [
 ];
 
 export default function TopUpPage() {
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<string>("standard");
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [transactions, setTransactions] = useState<UserTransaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
 
   const adminWhatsAppNumber = "6282291134197";
   const userEmail = user?.email || "user@example.com";
@@ -39,6 +50,13 @@ export default function TopUpPage() {
 
   const selectedPkg = creditPackages.find((p) => p.id === selectedPackage);
   const totalCredits = selectedPkg ? selectedPkg.credits + selectedPkg.bonus : 0;
+  const hasPendingTransaction = useMemo(
+    () =>
+      transactions.some(
+        (transaction) => transaction.payment_status === "pending_verification"
+      ),
+    [transactions]
+  );
 
   const generateWhatsAppUrl = (voucherCode?: string) => {
     const userWADisplay = whatsappNumber || "(belum diisi)";
@@ -61,6 +79,52 @@ Terima kasih!`;
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setLoadingTransactions(true);
+      const response = await fetch("/api/me/transactions", {
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal memuat riwayat top up");
+      }
+      setTransactions(data.transactions ?? []);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal memuat riwayat top up");
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+    refreshSession();
+  }, [fetchTransactions, refreshSession]);
+
+  useEffect(() => {
+    const handleFocusRefresh = () => {
+      if (document.visibilityState === "hidden") return;
+      fetchTransactions();
+      refreshSession();
+    };
+    window.addEventListener("focus", handleFocusRefresh);
+    document.addEventListener("visibilitychange", handleFocusRefresh);
+    return () => {
+      window.removeEventListener("focus", handleFocusRefresh);
+      document.removeEventListener("visibilitychange", handleFocusRefresh);
+    };
+  }, [fetchTransactions, refreshSession]);
+
+  useEffect(() => {
+    if (!hasPendingTransaction) return;
+    const timer = setInterval(() => {
+      fetchTransactions();
+      refreshSession();
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [fetchTransactions, hasPendingTransaction, refreshSession]);
 
   const handlePayViaWhatsApp = async () => {
     if (!whatsappNumber.trim()) {
@@ -89,6 +153,8 @@ Terima kasih!`;
       const url = generateWhatsAppUrl(data.voucher_code);
       window.open(url, "_blank");
       toast.success(`Transaksi dibuat! Kode voucher: ${data.voucher_code}. Silakan lanjutkan pembayaran via WhatsApp.`);
+      await fetchTransactions();
+      await refreshSession();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal memproses pembayaran");
     } finally {
@@ -270,14 +336,68 @@ Terima kasih!`;
             {/* Pay via WhatsApp Button */}
             <Button
               onClick={handlePayViaWhatsApp}
+              disabled={isSubmitting}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg shadow-green-500/25"
               size="lg"
             >
               <MessageCircle className="mr-2 h-4 w-4" />
-              Bayar via WhatsApp
+              {isSubmitting ? "Memproses..." : "Bayar via WhatsApp"}
               <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="text-lg font-semibold text-slate-900 font-heading mb-3">
+            Status Top Up Terbaru
+          </h2>
+          <p className="text-sm text-slate-500 mb-4">
+            Paket terpilih: {selectedPkg?.name} ({totalCredits} kredit)
+          </p>
+          {loadingTransactions ? (
+            <p className="text-sm text-slate-500">Memuat transaksi...</p>
+          ) : transactions.length === 0 ? (
+            <p className="text-sm text-slate-500">Belum ada transaksi top up.</p>
+          ) : (
+            <div className="space-y-3">
+              {transactions.slice(0, 5).map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="rounded-lg border border-slate-200 p-3 flex items-center justify-between"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">
+                      {transaction.package_name} - {transaction.total_credits} kredit
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Rp {transaction.price.toLocaleString("id-ID")} -{" "}
+                      {new Date(transaction.created_at).toLocaleString("id-ID")}
+                    </p>
+                  </div>
+                  <span
+                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                      transaction.payment_status === "paid"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : transaction.payment_status === "pending_verification"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-rose-100 text-rose-700"
+                    }`}
+                  >
+                    {transaction.payment_status === "pending_verification"
+                      ? "Menunggu Verifikasi"
+                      : transaction.payment_status === "paid"
+                        ? "Lunas"
+                        : "Ditolak"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </div>
     </DashboardLayout>
