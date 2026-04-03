@@ -152,6 +152,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const resultSnapshot = {
+      videoInfo: {
+        id: videoId,
+        title: videoInfo.title,
+        thumbnail: videoInfo.thumbnail,
+        totalComments: stats.total,
+        channelTitle: videoInfo.channelTitle,
+        viewCount: videoInfo.viewCount,
+        likeCount: videoInfo.likeCount,
+      },
+      sentimentStats: {
+        positive: stats.positive,
+        negative: stats.negative,
+        neutral: stats.neutral,
+        total: stats.total,
+      },
+      percentages: stats.percentages,
+      comments: analyzedComments.slice(0, 100).map((c) => ({
+        id: c.id,
+        text: c.text,
+        sentiment: c.sentiment,
+        confidence: c.confidence,
+        author: c.author,
+        likes: c.likes,
+      })),
+      creditsUsed,
+      aiInsight,
+      wordCloud,
+    };
+
     // Save to database and deduct credits
     try {
       if (user) {
@@ -166,45 +196,44 @@ export async function POST(request: NextRequest) {
           neutral_count: stats.neutral,
           credits_used: creditsUsed,
           is_premium: isPremium,
+          result_snapshot: resultSnapshot,
         });
-    // Deduct credits
-    try {
-      if (user) {
-        const { data: currentProfile } = adminClient
-          ? await adminClient
-              .from("users")
-              .select("credit_balance")
-              .eq("id", user.id)
-              .maybeSingle()
-          : await supabase
-              .from("users")
-              .select("credit_balance")
-              .eq("id", user.id)
-              .maybeSingle();
 
-        if (currentProfile) {
-          const newBalance = Math.max(
-            0,
-            normalizeCreditBalance(currentProfile.credit_balance) - creditsUsed
-          );
-          const creditsUpdateClient = adminClient ?? supabase;
-          const { error: updateError } = await creditsUpdateClient
-            .from("users")
-            .update({ credit_balance: newBalance })
-            .eq("id", user.id);
-          
-          if (updateError) {
-            console.error("Failed to update credits:", updateError);
-          } else {
-            console.log(
-              `Credits updated: ${normalizeCreditBalance(currentProfile.credit_balance)} -> ${newBalance}`
+        try {
+          const { data: currentProfile } = adminClient
+            ? await adminClient
+                .from("users")
+                .select("credit_balance")
+                .eq("id", user.id)
+                .maybeSingle()
+            : await supabase
+                .from("users")
+                .select("credit_balance")
+                .eq("id", user.id)
+                .maybeSingle();
+
+          if (currentProfile) {
+            const newBalance = Math.max(
+              0,
+              normalizeCreditBalance(currentProfile.credit_balance) - creditsUsed
             );
+            const creditsUpdateClient = adminClient ?? supabase;
+            const { error: updateError } = await creditsUpdateClient
+              .from("users")
+              .update({ credit_balance: newBalance })
+              .eq("id", user.id);
+
+            if (updateError) {
+              console.error("Failed to update credits:", updateError);
+            } else {
+              console.log(
+                `Credits updated: ${normalizeCreditBalance(currentProfile.credit_balance)} -> ${newBalance}`
+              );
+            }
           }
+        } catch (creditErr) {
+          console.error("Database update error:", creditErr);
         }
-      }
-    } catch (dbError) {
-      console.error("Database update error:", dbError);
-    }
       }
     } catch (dbError) {
       console.error("Database save error:", dbError);

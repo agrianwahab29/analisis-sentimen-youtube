@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { History, Download, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { History, ChevronLeft, ChevronRight, Loader2, Eye } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface AnalysisHistoryItem {
@@ -129,6 +130,7 @@ export default function HistoryPage() {
                     <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Sentimen</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipe</th>
                     <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kredit</th>
+                    <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Detail</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -159,6 +161,15 @@ export default function HistoryPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right"><span className="text-sm font-medium text-amber-600">{item.credits_used}</span></td>
+                      <td className="px-6 py-4 text-right">
+                        <Link
+                          href={`/dashboard/history/${item.id}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-blue-300 hover:text-blue-700 transition-colors"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Lihat
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
