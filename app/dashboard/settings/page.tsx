@@ -37,6 +37,11 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [accountTier, setAccountTier] = useState<{
+    label: string;
+    detail: string;
+  }>({ label: "Gratis", detail: "Paket langganan Anda" });
+
   // Delete account dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -60,6 +65,43 @@ export default function SettingsPage() {
             analysisComplete: data.analysisCompleteNotifications ?? true,
             securityAlerts: data.securityAlertNotifications ?? true,
           });
+        }
+
+        // Derive "package/paket" from the latest transaction state.
+        // This avoids hardcoded "Gratis" and keeps Settings in sync with Top Up.
+        try {
+          const txRes = await fetch("/api/me/transactions", { cache: "no-store" });
+          if (txRes.ok) {
+            const txData = await txRes.json();
+            const latest = (txData.transactions ?? [])?.[0];
+            if (latest?.package_name && typeof latest.total_credits === "number") {
+              if (latest.payment_status === "paid") {
+                setAccountTier({
+                  label: `Paket ${latest.package_name}`,
+                  detail: `${latest.total_credits} kredit (Lunas)`,
+                });
+              } else if (latest.payment_status === "pending_verification") {
+                setAccountTier({
+                  label: `Paket ${latest.package_name}`,
+                  detail: `${latest.total_credits} kredit (Menunggu verifikasi)`,
+                });
+              } else if (latest.payment_status === "rejected") {
+                setAccountTier({
+                  label: "Gratis",
+                  detail: "Paket langganan Anda",
+                });
+              } else {
+                setAccountTier({
+                  label: `Paket ${latest.package_name}`,
+                  detail: `${latest.total_credits} kredit`,
+                });
+              }
+              return;
+            }
+          }
+        } catch (e) {
+          // Non-blocking: settings notifications still works even if tx fetch fails.
+          console.error("Failed to load account tier from transactions:", e);
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -215,9 +257,10 @@ export default function SettingsPage() {
                   <p className="text-xs text-slate-500">Paket langganan Anda</p>
                 </div>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Gratis
+                  {accountTier.label}
                 </span>
               </div>
+              <p className="text-xs text-slate-500">{accountTier.detail}</p>
             </CardContent>
           </Card>
         </motion.div>
