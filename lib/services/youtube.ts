@@ -80,6 +80,7 @@ export async function getVideoComments(
   maxResults: number = 5000
 ): Promise<YouTubeComment[]> {
   const comments: YouTubeComment[] = [];
+  const seenCommentIds = new Set<string>();
   let nextPageToken: string | undefined = undefined;
   
   // Check if API key is configured
@@ -115,14 +116,18 @@ export async function getVideoComments(
       for (const item of items) {
         if (comments.length >= maxResults) break;
         const commentSnippet = item.snippet?.topLevelComment?.snippet;
+        const topLevelCommentId = item.snippet?.topLevelComment?.id || item.id || "";
         if (commentSnippet) {
-          comments.push({
-            id: item.id || "",
-            author: commentSnippet.authorDisplayName || "",
-            text: commentSnippet.textDisplay || "",
-            likeCount: commentSnippet.likeCount || 0,
-            publishedAt: commentSnippet.publishedAt || "",
-          });
+          if (topLevelCommentId && !seenCommentIds.has(topLevelCommentId)) {
+            seenCommentIds.add(topLevelCommentId);
+            comments.push({
+              id: topLevelCommentId,
+              author: commentSnippet.authorDisplayName || "",
+              text: commentSnippet.textDisplay || "",
+              likeCount: commentSnippet.likeCount || 0,
+              publishedAt: commentSnippet.publishedAt || "",
+            });
+          }
         }
 
         if (comments.length >= maxResults) break;
@@ -133,8 +138,11 @@ export async function getVideoComments(
           if (comments.length >= maxResults) break;
           const replySnippet = reply.snippet;
           if (!replySnippet) continue;
+          const replyId = reply.id || "";
+          if (!replyId || seenCommentIds.has(replyId)) continue;
+          seenCommentIds.add(replyId);
           comments.push({
-            id: reply.id || "",
+            id: replyId,
             author: replySnippet.authorDisplayName || "",
             text: replySnippet.textDisplay || "",
             likeCount: replySnippet.likeCount || 0,
@@ -167,8 +175,11 @@ export async function getVideoComments(
               if (comments.length >= maxResults) break;
               const replySnippet = reply.snippet;
               if (!replySnippet) continue;
+              const replyId = reply.id || "";
+              if (!replyId || seenCommentIds.has(replyId)) continue;
+              seenCommentIds.add(replyId);
               comments.push({
-                id: reply.id || "",
+                id: replyId,
                 author: replySnippet.authorDisplayName || "",
                 text: replySnippet.textDisplay || "",
                 likeCount: replySnippet.likeCount || 0,

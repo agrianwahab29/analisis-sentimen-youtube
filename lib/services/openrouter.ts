@@ -19,7 +19,7 @@ export async function generateAIInsight(
   try {
     // If no API key provided, return mock data for development
     if (!apiKey) {
-      return generateMockInsight(videoInfo, sentimentStats);
+      return generateMockInsight(videoInfo, sentimentStats, comments);
     }
 
     // Sample comments for analysis: prioritize high-signal comments.
@@ -116,31 +116,76 @@ Berikan analisis dalam format berikut (gunakan Bahasa Indonesia):
     return parseAIResponse(content);
   } catch (error) {
     console.error("Error generating AI insight:", error);
-    // Return mock data as fallback
-    return generateMockInsight(videoInfo, sentimentStats);
+    // Return data-driven fallback when LLM is unavailable
+    return generateMockInsight(videoInfo, sentimentStats, comments);
   }
 }
 
 function generateMockInsight(
   videoInfo: { title: string; totalComments: number },
-  sentimentStats: { positive: number; negative: number; neutral: number }
+  sentimentStats: { positive: number; negative: number; neutral: number },
+  comments: { text: string; sentiment: string; likes?: number; confidence?: number }[]
 ): AIInsightResult {
   const total = sentimentStats.positive + sentimentStats.negative + sentimentStats.neutral;
   const positivePercent = total > 0 ? ((sentimentStats.positive / total) * 100).toFixed(0) : "0";
   const negativePercent = total > 0 ? ((sentimentStats.negative / total) * 100).toFixed(0) : "0";
 
+  const negativeExamples = comments
+    .filter((c) => c.sentiment === "negative")
+    .sort((a, b) => ((b.likes ?? 0) + (b.confidence ?? 0) * 10) - ((a.likes ?? 0) + (a.confidence ?? 0) * 10))
+    .slice(0, 3)
+    .map((c) => c.text.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  const positiveExamples = comments
+    .filter((c) => c.sentiment === "positive")
+    .sort((a, b) => ((b.likes ?? 0) + (b.confidence ?? 0) * 10) - ((a.likes ?? 0) + (a.confidence ?? 0) * 10))
+    .slice(0, 3)
+    .map((c) => c.text.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  const toComplaint = (text: string): string => {
+    const t = text.length > 140 ? `${text.slice(0, 137)}...` : text;
+    return `Komentar negatif dominan menyoroti: "${t}"`;
+  };
+
+  const toSuggestion = (text: string): string => {
+    const lower = text.toLowerCase();
+    if (lower.includes("audio") || lower.includes("suara")) {
+      return "Perbaiki kualitas audio (noise reduction + level volume konsisten) sebelum publish.";
+    }
+    if (lower.includes("panjang") || lower.includes("durasi")) {
+      return "Buat struktur chapter yang lebih ringkas agar durasi terasa padat dan mudah diikuti.";
+    }
+    if (lower.includes("jelas") || lower.includes("detail")) {
+      return "Tambahkan contoh praktis langkah demi langkah pada bagian yang sering dianggap kurang jelas.";
+    }
+    return `Tindaklanjuti tema komentar ini pada video berikutnya: "${text.slice(0, 80)}${text.length > 80 ? "..." : ""}".`;
+  };
+
+  const complaints =
+    negativeExamples.length > 0
+      ? negativeExamples.map(toComplaint).slice(0, 3)
+      : [
+          "Tidak ada keluhan dominan yang benar-benar menonjol dari sampel komentar.",
+          "Sebagian kritik bersifat minor dan tidak konsisten antar komentar.",
+          "Perlu observasi lanjutan pada video berikutnya untuk melihat pola keluhan yang stabil.",
+        ];
+
+  const suggestions = (
+    negativeExamples.length > 0 ? negativeExamples.map(toSuggestion) : positiveExamples.map(toSuggestion)
+  ).slice(0, 3);
+
+  while (suggestions.length < 3) {
+    suggestions.push(
+      "Uji dua variasi format konten (lebih singkat vs lebih detail) dan bandingkan sentimen komentarnya."
+    );
+  }
+
   return {
-    summary: `Dari ${total} komentar yang dianalisis, mayoritas penonton (${positivePercent}%) merespons secara positif terhadap video "${videoInfo.title}". Sentimen positif ini menunjukkan konten yang berkualitas dan sesuai dengan ekspektasi audiens. Namun, ada ${negativePercent}% komentar negatif yang bisa menjadi bahan evaluasi untuk perbaikan ke depannya.`,
-    complaints: [
-      "Beberapa penonton menyebutkan bahwa durasi video terlalu panjang dan membosankan",
-      "Ada yang merasa penjelasan kurang detail di beberapa bagian penting",
-      "Kualitas audio perlu ditingkatkan karena sulit didengar di bagian tertentu",
-    ],
-    suggestions: [
-      "Pertimbangkan untuk membuat video dengan durasi lebih pendek namun padat informasi",
-      "Tambahkan visualisasi atau contoh praktis untuk mendukung penjelasan",
-      "Lakukan tes audio sebelum publish untuk memastikan kualitas suara optimal",
-    ],
+    summary: `Dari ${total} komentar yang dianalisis pada video "${videoInfo.title}", ${positivePercent}% bernada positif, ${negativePercent}% bernada negatif, dan sisanya netral. Temuan ini menunjukkan respons audiens cenderung positif, namun masih ada sinyal perbaikan pada beberapa aspek konten yang berulang di komentar negatif paling berpengaruh.`,
+    complaints,
+    suggestions,
   };
 }
 
