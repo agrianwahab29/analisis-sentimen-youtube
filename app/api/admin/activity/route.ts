@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     const isAdmin =
-      !!userData && (userData.role === "admin" || userData.email === "agrianwahab10@gmail.com");
+      userData?.role === "admin" || user.email === "agrianwahab10@gmail.com";
 
     if (!isAdmin) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403, headers: responseHeaders });

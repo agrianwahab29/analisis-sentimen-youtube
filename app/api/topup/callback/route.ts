@@ -282,7 +282,7 @@ async function createTransaction(
       total_credits,
       price: amount,
       payment_method: "sociabuzz",
-      payment_status: "pending",
+      payment_status: "pending_verification",
       voucher_code: voucherCode,
       sociabuzz_order_id: order_id,
     })

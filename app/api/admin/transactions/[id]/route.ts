@@ -32,15 +32,14 @@ export async function PATCH(
       );
     }
 
-    // Check if user is admin
+    // Check if user is admin (role-based, with safe fallback)
     const { data: userData } = await sessionClient
       .from("users")
       .select("email, role")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    const isAdmin =
-      !!userData && (userData.role === "admin" || userData.email === "agrianwahab10@gmail.com");
+    const isAdmin = userData?.role === "admin" || user.email === "agrianwahab10@gmail.com";
 
     if (!isAdmin) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403, headers: responseHeaders });

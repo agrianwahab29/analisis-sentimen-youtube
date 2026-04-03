@@ -1,7 +1,7 @@
 // Auth hook for managing user authentication
 "use client";
 
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback, useMemo } from "react";
 
 type AuthUser = {
   id: string;
@@ -23,14 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/session", { 
+      const res = await fetch("/api/auth/session", {
         cache: "no-store",
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-        }
+          Pragma: "no-cache",
+        },
       });
       const data = (await res.json()) as { user: AuthUser | null };
       setUser(data.user ?? null);
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshSession();
@@ -61,8 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const { Provider } = AuthContext;
+  const contextValue = useMemo(
+    () => ({ user, loading, signInWithGoogle, signOut, refreshSession }),
+    [user, loading, refreshSession]
+  );
   return (
-    <Provider value={{ user, loading, signInWithGoogle, signOut, refreshSession }}>
+    <Provider value={contextValue}>
       {children}
     </Provider>
   );

@@ -25,8 +25,6 @@ export function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!notifOpen) return;
-
     fetch("/api/admin/transactions?status=pending_verification&limit=5")
       .then((res) => res.json())
       .then((data) => {
