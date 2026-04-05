@@ -112,6 +112,7 @@ function AnalysisContent() {
           ? { message: result.message, onDismiss: () => setShowDemoWarning(false) }
           : null
       }
+      demoBadge={result.demoBadge || null}
     />
   );
 }

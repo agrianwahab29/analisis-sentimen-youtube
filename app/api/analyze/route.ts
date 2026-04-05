@@ -77,7 +77,20 @@ export async function POST(request: NextRequest) {
     
     if (!youtubeApiKey || youtubeApiKey === "your_youtube_api_key_here") {
       // Use HuggingFace model with demo data
-      return NextResponse.json(await getHuggingFaceDemoData(videoId, isPremium));
+      const demoResult = await getHuggingFaceDemoData(videoId, isPremium);
+      return NextResponse.json({
+        ...demoResult,
+        demo: true,
+        demoBadge: {
+          type: "warning",
+          title: "Demo Mode",
+          message: "Analisis menggunakan data simulasi. Tambahkan YOUTUBE_API_KEY di environment variables untuk analisis data real.",
+          action: {
+            label: "Panduan Setup",
+            href: "#setup-guide"
+          }
+        }
+      });
     }
 
     // Real data flow

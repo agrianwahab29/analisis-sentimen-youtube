@@ -8,7 +8,7 @@ import { SentimentPieChart } from "@/components/dashboard/sentiment-pie-chart";
 import { SentimentBarChart } from "@/components/dashboard/sentiment-bar-chart";
 import { WordCloud } from "@/components/dashboard/word-cloud";
 import { AIInsight } from "@/components/dashboard/ai-insight";
-import { ArrowLeft, Download, Filter, MessageSquare, AlertCircle } from "lucide-react";
+import { ArrowLeft, Download, Filter, MessageSquare, AlertCircle, Info } from "lucide-react";
 import Link from "next/link";
 import type { AnalysisResult } from "@/lib/types/analysis-result";
 
@@ -18,6 +18,12 @@ interface AnalysisResultViewProps {
   /** e.g. "Riwayat analisis — 4 April 2026" */
   subtitle?: string | null;
   demoWarning?: { message: string; onDismiss: () => void } | null;
+  demoBadge?: {
+    type: string;
+    title: string;
+    message: string;
+    action?: { label: string; href: string };
+  } | null;
 }
 
 export function AnalysisResultView({
@@ -25,6 +31,7 @@ export function AnalysisResultView({
   backHref,
   subtitle,
   demoWarning,
+  demoBadge,
 }: AnalysisResultViewProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "comments">("overview");
   const [sentimentFilter, setSentimentFilter] = useState<
@@ -73,6 +80,33 @@ export function AnalysisResultView({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Demo Mode Badge - AGR-13 */}
+        {demoBadge && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg border border-amber-300 bg-amber-50 p-3 flex items-center gap-3"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 flex-shrink-0">
+              <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-900">{demoBadge.title}</p>
+              <p className="text-xs text-amber-700">{demoBadge.message}</p>
+            </div>
+            {demoBadge.action && (
+              <a
+                href={demoBadge.action.href}
+                className="text-xs font-medium text-amber-800 hover:text-amber-900 underline flex-shrink-0"
+              >
+                {demoBadge.action.label}
+              </a>
+            )}
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -156,6 +190,23 @@ export function AnalysisResultView({
 
         {activeTab === "overview" ? (
           <>
+            {/* Sample Info Banner - AGR-11 */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-lg border border-blue-200 bg-blue-50 p-4 flex items-start gap-3"
+            >
+              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-blue-900">
+                  <strong>Analisis Sampel:</strong> Menampilkan {result.comments.length} komentar representatif 
+                  dari total {result.sentimentStats.total.toLocaleString("id-ID")} komentar yang dianalisis. 
+                  Sampel dipilih berdasarkan relevansi dan engagement (likes) untuk memberikan gambaran 
+                  akurat dari keseluruhan sentimen.
+                </p>
+              </div>
+            </motion.div>
+
             <div className="grid gap-6 md:grid-cols-3">
               <SentimentCard
                 type="positive"

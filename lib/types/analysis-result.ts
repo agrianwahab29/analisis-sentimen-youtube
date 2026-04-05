@@ -38,4 +38,10 @@ export interface AnalysisResult {
   comments: AnalysisComment[];
   demo?: boolean;
   message?: string;
+  demoBadge?: {
+    type: string;
+    title: string;
+    message: string;
+    action?: { label: string; href: string };
+  } | null;
 }
