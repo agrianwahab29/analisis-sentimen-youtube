@@ -2,7 +2,27 @@ import { NextResponse } from "next/server";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 
-export async function GET() {
+// Security: Debug endpoints should not be accessible in production without secret
+function isDebugAllowed(request: Request): boolean {
+  // Always allow in development
+  if (process.env.NODE_ENV !== "production") {
+    return true;
+  }
+  
+  // In production, require DEBUG_SECRET header
+  const debugSecret = request.headers.get("x-debug-secret");
+  return debugSecret === process.env.DEBUG_SECRET;
+}
+
+export async function GET(request: Request) {
+  // Security check
+  if (!isDebugAllowed(request)) {
+    return NextResponse.json(
+      { error: "Debug endpoints are disabled in production" },
+      { status: 403 }
+    );
+  }
+
   const results: any = {
     timestamp: new Date().toISOString(),
     env: {

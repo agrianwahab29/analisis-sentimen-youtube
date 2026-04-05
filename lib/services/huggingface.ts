@@ -1,4 +1,5 @@
 import type { Sentiment } from "./sentiment";
+import { withRetry, classifyHuggingFaceError } from "@/lib/error-handling";
 
 interface HuggingFaceResponse {
   label: string;
@@ -16,51 +17,62 @@ const HUGGINGFACE_MODEL = "indobenchmark/indobert-base-p2-finetuned-sentiment";
 const HUGGINGFACE_API_URL = `https://api-inference.huggingface.co/models/${HUGGINGFACE_MODEL}`;
 
 /**
- * Analyze sentiment using HuggingFace Inference API
+ * Analyze sentiment using HuggingFace Inference API with retry mechanism
  * FREE tier: 30k input tokens/minute
  * With token: Higher rate limits and reliability
  */
 export async function analyzeSentimentHuggingFace(text: string): Promise<SentimentResult> {
-  try {
-    const response = await fetch(HUGGINGFACE_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // Add HF token for higher rate limits
-        "Authorization": `Bearer ${process.env.HUGGINGFACE_API_TOKEN || ""}`
-      },
-      body: JSON.stringify({ inputs: text }),
-    });
+  return withRetry(
+    async () => {
+      const response = await fetch(HUGGINGFACE_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Add HF token for higher rate limits
+          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_TOKEN || ""}`
+        },
+        body: JSON.stringify({ inputs: text }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`HuggingFace API error: ${response.status}`);
-    }
+      if (!response.ok) {
+        const error = new Error(`HuggingFace API error: ${response.status}`);
+        (error as any).statusCode = response.status;
+        throw error;
+      }
 
-    const result = await response.json() as HuggingFaceResponse[];
-    
-    // Map HuggingFace labels ke Sentiment
-    const labelMap: Record<string, Sentiment> = {
-      "LABEL_0": "negative",
-      "LABEL_1": "neutral", 
-      "LABEL_2": "positive",
-      "negative": "negative",
-      "neutral": "neutral",
-      "positive": "positive",
-    };
+      const result = await response.json() as HuggingFaceResponse[];
+      
+      // Map HuggingFace labels ke Sentiment
+      const labelMap: Record<string, Sentiment> = {
+        "LABEL_0": "negative",
+        "LABEL_1": "neutral", 
+        "LABEL_2": "positive",
+        "negative": "negative",
+        "neutral": "neutral",
+        "positive": "positive",
+      };
 
-    const sentiment = labelMap[result[0]?.label] || "neutral";
-    const confidence = result[0]?.score || 0.5;
+      const sentiment = labelMap[result[0]?.label] || "neutral";
+      const confidence = result[0]?.score || 0.5;
 
-    return {
-      text,
-      sentiment,
-      confidence,
-    };
-  } catch (error) {
-    console.error("HuggingFace API error:", error);
+      return {
+        text,
+        sentiment,
+        confidence,
+      };
+    },
+    {
+      maxRetries: 3,
+      baseDelay: 2000, // Longer delay for HuggingFace (model loading)
+      maxDelay: 15000,
+      backoffMultiplier: 2,
+    },
+    classifyHuggingFaceError
+  ).catch((error) => {
+    console.error("HuggingFace API failed after retries:", error);
     // Fallback ke keyword-based
     return analyzeSentimentKeyword(text);
-  }
+  });
 }
 
 /**

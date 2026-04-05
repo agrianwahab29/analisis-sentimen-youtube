@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest --run",
     "linear:seed": "node scripts/seed-linear-issues.mjs",
-    "linear:seed:dry": "node scripts/seed-linear-issues.mjs --dry-run"
+    "linear:seed:dry": "node scripts/seed-linear-issues.mjs --dry-run",
+    "linear:update": "node scripts/update-linear-status.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

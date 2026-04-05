@@ -69,9 +69,32 @@ export async function getVideoInfo(videoId: string): Promise<VideoInfo | null> {
       commentCount: parseInt(video.statistics?.commentCount || "0", 10),
       publishedAt: video.snippet?.publishedAt || "",
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching video info:", error);
-    return null;
+    
+    // Handle specific YouTube API errors
+    if (error?.code === 403) {
+      if (error?.errors?.[0]?.reason === "quotaExceeded") {
+        throw new Error("YOUTUBE_QUOTA_EXCEEDED: Quota YouTube API habis. Coba lagi besok atau gunakan demo mode.");
+      }
+      throw new Error("YOUTUBE_ACCESS_DENIED: Akses ke video ditolak. Video mungkin private atau dibatasi.");
+    }
+    
+    if (error?.code === 404) {
+      throw new Error("YOUTUBE_VIDEO_NOT_FOUND: Video tidak ditemukan atau sudah dihapus.");
+    }
+    
+    if (error?.code === 429) {
+      throw new Error("YOUTUBE_RATE_LIMIT: Terlalu banyak request. Tunggu beberapa saat dan coba lagi.");
+    }
+    
+    // Network/timeout errors
+    if (error?.code === "ECONNRESET" || error?.code === "ETIMEDOUT" || error?.code === "ENOTFOUND") {
+      throw new Error("YOUTUBE_NETWORK_ERROR: Gagal terhubung ke YouTube API. Cek koneksi internet Anda.");
+    }
+    
+    // Generic error with code for debugging
+    throw new Error(`YOUTUBE_API_ERROR: Gagal mengambil info video (${error?.code || "UNKNOWN"}). Coba lagi nanti.`);
   }
 }
 
@@ -203,8 +226,38 @@ export async function getVideoComments(
     return comments;
   } catch (error: any) {
     console.error("Error fetching comments:", error?.message || error);
-    // Re-throw error so caller knows something went wrong
-    throw error;
+    
+    // Handle specific YouTube API errors with user-friendly messages
+    if (error?.code === 403) {
+      if (error?.errors?.[0]?.reason === "quotaExceeded") {
+        throw new Error("YOUTUBE_QUOTA_EXCEEDED: Quota YouTube API habis untuk hari ini. Coba lagi besok atau gunakan demo mode.");
+      }
+      if (error?.errors?.[0]?.reason === "commentsDisabled") {
+        throw new Error("YOUTUBE_COMMENTS_DISABLED: Komentar di video ini dimatikan oleh pemilik video.");
+      }
+      throw new Error("YOUTUBE_ACCESS_DENIED: Akses ke komentar ditolak. Video mungkin private atau dibatasi.");
+    }
+    
+    if (error?.code === 404) {
+      throw new Error("YOUTUBE_VIDEO_NOT_FOUND: Video tidak ditemukan atau sudah dihapus.");
+    }
+    
+    if (error?.code === 429) {
+      throw new Error("YOUTUBE_RATE_LIMIT: Terlalu banyak request ke YouTube API. Tunggu 1-2 menit dan coba lagi.");
+    }
+    
+    // Network/timeout errors
+    if (error?.code === "ECONNRESET" || error?.code === "ETIMEDOUT" || error?.code === "ENOTFOUND") {
+      throw new Error("YOUTUBE_NETWORK_ERROR: Gagal terhubung ke YouTube API. Cek koneksi internet Anda dan coba lagi.");
+    }
+    
+    // Check if it's our custom API key error
+    if (error?.message?.includes("YOUTUBE_API_KEY")) {
+      throw error;
+    }
+    
+    // Generic error with code for debugging
+    throw new Error(`YOUTUBE_API_ERROR: Gagal mengambil komentar (${error?.code || "UNKNOWN"}). Coba lagi nanti.`);
   }
 }
 

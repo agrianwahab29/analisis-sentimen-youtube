@@ -1,4 +1,5 @@
 import { sanitizeInsightPlainText } from "@/lib/utils/insight-plain-text";
+import { withRetry, classifyOpenRouterError } from "@/lib/error-handling";
 
 export interface AIInsightResult {
   summary: string;
@@ -26,41 +27,66 @@ export async function generateAIInsight(
   comments: { text: string; sentiment: string; likes?: number; confidence?: number }[],
   apiKey?: string
 ): Promise<AIInsightResult | null> {
+  // If no API key provided, return mock data for development
+  if (!apiKey) {
+    return sanitizeInsightResult(
+      generateMockInsight(videoInfo, sentimentStats, comments)
+    );
+  }
+
   try {
-    // If no API key provided, return mock data for development
-    if (!apiKey) {
-      return sanitizeInsightResult(
-        generateMockInsight(videoInfo, sentimentStats, comments)
-      );
-    }
+    return await withRetry(
+      async () => generateAIInsightInternal(videoInfo, sentimentStats, comments, apiKey),
+      {
+        maxRetries: 2, // Fewer retries for AI generation (expensive)
+        baseDelay: 3000,
+        maxDelay: 20000,
+        backoffMultiplier: 2,
+      },
+      classifyOpenRouterError
+    );
+  } catch (error) {
+    console.error("OpenRouter API failed after retries:", error);
+    // Return data-driven fallback when LLM is unavailable
+    return sanitizeInsightResult(
+      generateMockInsight(videoInfo, sentimentStats, comments)
+    );
+  }
+}
 
-    // Sample comments for analysis: prioritize high-signal comments.
-    const sortBySignal = (
-      a: { likes?: number; confidence?: number },
-      b: { likes?: number; confidence?: number }
-    ) => {
-      const aScore = (a.likes ?? 0) * 0.2 + (a.confidence ?? 0) * 100;
-      const bScore = (b.likes ?? 0) * 0.2 + (b.confidence ?? 0) * 100;
-      return bScore - aScore;
-    };
+async function generateAIInsightInternal(
+  videoInfo: { title: string; totalComments: number },
+  sentimentStats: { positive: number; negative: number; neutral: number },
+  comments: { text: string; sentiment: string; likes?: number; confidence?: number }[],
+  apiKey: string
+): Promise<AIInsightResult> {
+  // Sample comments for analysis: prioritize high-signal comments.
+  const sortBySignal = (
+    a: { likes?: number; confidence?: number },
+    b: { likes?: number; confidence?: number }
+  ) => {
+    const aScore = (a.likes ?? 0) * 0.2 + (a.confidence ?? 0) * 100;
+    const bScore = (b.likes ?? 0) * 0.2 + (b.confidence ?? 0) * 100;
+    return bScore - aScore;
+  };
 
-    const positiveComments = comments
-      .filter((c) => c.sentiment === "positive")
-      .sort(sortBySignal)
-      .slice(0, 5)
-      .map((c) => c.text);
-    const negativeComments = comments
-      .filter((c) => c.sentiment === "negative")
-      .sort(sortBySignal)
-      .slice(0, 5)
-      .map((c) => c.text);
-    const neutralComments = comments
-      .filter((c) => c.sentiment === "neutral")
-      .sort(sortBySignal)
-      .slice(0, 5)
-      .map((c) => c.text);
+  const positiveComments = comments
+    .filter((c) => c.sentiment === "positive")
+    .sort(sortBySignal)
+    .slice(0, 5)
+    .map((c) => c.text);
+  const negativeComments = comments
+    .filter((c) => c.sentiment === "negative")
+    .sort(sortBySignal)
+    .slice(0, 5)
+    .map((c) => c.text);
+  const neutralComments = comments
+    .filter((c) => c.sentiment === "neutral")
+    .sort(sortBySignal)
+    .slice(0, 5)
+    .map((c) => c.text);
 
-    const prompt = `Analisis komentar video YouTube berikut:
+  const prompt = `Analisis komentar video YouTube berikut:
 
 Judul Video: ${videoInfo.title}
 Total Komentar: ${videoInfo.totalComments}
@@ -91,47 +117,42 @@ Berikan analisis dalam format berikut (gunakan Bahasa Indonesia, tanpa HTML/Mark
 - [Saran 2]
 - [Saran 3]`;
 
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-          "X-Title": "VidSense AI Analysis",
-        },
-        body: JSON.stringify({
-          model: process.env.OPENROUTER_MODEL || "meta-llama/llama-3-8b-instruct:free",
-          messages: [
-            {
-              role: "system",
-              content:
-                "Kamu adalah AI analis sentimen senior untuk content creator YouTube. Jawaban harus spesifik, berbasis data, non-generik, dan langsung bisa ditindaklanjuti. Hindari saran klise. Gunakan Bahasa Indonesia. PENTING: tulis hanya teks biasa (plain text). Jangan gunakan HTML, tag apa pun (<a>, <br>, <p>, dan lainnya), Markdown, atau kode. Jangan sertakan tautan atau markup — cukup kalimat biasa.",
-            },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.7,
-          max_tokens: 500,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.status}`);
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+        "X-Title": "VidSense AI Analysis",
+      },
+      body: JSON.stringify({
+        model: process.env.OPENROUTER_MODEL || "meta-llama/llama-3-8b-instruct:free",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Kamu adalah AI analis sentimen senior untuk content creator YouTube. Jawaban harus spesifik, berbasis data, non-generik, dan langsung bisa ditindaklanjuti. Hindari saran klise. Gunakan Bahasa Indonesia. PENTING: tulis hanya teks biasa (plain text). Jangan gunakan HTML, tag apa pun (<a>, <br>, <p>, dan lainnya), Markdown, atau kode. Jangan sertakan tautan atau markup — cukup kalimat biasa.",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
     }
+  );
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
-
-    return sanitizeInsightResult(parseAIResponse(content));
-  } catch (error) {
-    console.error("Error generating AI insight:", error);
-    // Return data-driven fallback when LLM is unavailable
-    return sanitizeInsightResult(
-      generateMockInsight(videoInfo, sentimentStats, comments)
-    );
+  if (!response.ok) {
+    const error = new Error(`OpenRouter API error: ${response.status}`);
+    (error as any).statusCode = response.status;
+    throw error;
   }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || "";
+
+  return sanitizeInsightResult(parseAIResponse(content));
 }
 
 function generateMockInsight(

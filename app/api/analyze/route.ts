@@ -14,6 +14,7 @@ import { generateAIInsight } from "@/lib/services/openrouter";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeCreditBalance } from "@/lib/normalize-credit-balance";
+import { formatErrorForUser, APIError } from "@/lib/error-handling";
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,22 +91,41 @@ export async function POST(request: NextRequest) {
       ]);
     } catch (youtubeError: any) {
       console.error("YouTube API error:", youtubeError);
+      
+      // Format error for user-friendly display
+      const formattedError = formatErrorForUser(youtubeError);
+      
       return NextResponse.json(
-        { error: `Gagal mengambil data YouTube: ${youtubeError.message || "Unknown error"}` },
-        { status: 500 }
+        { 
+          error: formattedError.message,
+          errorCode: (youtubeError as APIError).code || "YOUTUBE_ERROR",
+          title: formattedError.title,
+          action: formattedError.action,
+        },
+        { status: (youtubeError as APIError).statusCode || 500 }
       );
     }
 
     if (!videoInfo) {
       return NextResponse.json(
-        { error: "Video tidak ditemukan atau tidak dapat diakses" },
+        { 
+          error: "Video tidak ditemukan atau tidak dapat diakses",
+          errorCode: "VIDEO_NOT_FOUND",
+          title: "Video Tidak Ditemukan",
+          action: "Pastikan video bersifat publik dan URL sudah benar."
+        },
         { status: 404 }
       );
     }
     
     if (!rawComments || rawComments.length === 0) {
       return NextResponse.json(
-        { error: "Tidak ada komentar yang dapat dianalisis pada video ini" },
+        { 
+          error: "Tidak ada komentar yang dapat dianalisis pada video ini",
+          errorCode: "NO_COMMENTS",
+          title: "Tidak Ada Komentar",
+          action: "Pilih video lain yang memiliki komentar aktif."
+        },
         { status: 400 }
       );
     }
@@ -116,10 +136,27 @@ export async function POST(request: NextRequest) {
       text: preprocessText(comment.text),
     }));
 
-    // Analyze sentiment using HuggingFace
-    const sentimentResults = await analyzeSentimentBatch(
-      processedComments.map((c) => c.text)
-    );
+    // Analyze sentiment using HuggingFace (with retry mechanism built-in)
+    let sentimentResults: SentimentResult[];
+    try {
+      sentimentResults = await analyzeSentimentBatch(
+        processedComments.map((c) => c.text)
+      );
+    } catch (sentimentError: any) {
+      console.error("Sentiment analysis error:", sentimentError);
+      
+      const formattedError = formatErrorForUser(sentimentError);
+      
+      return NextResponse.json(
+        { 
+          error: formattedError.message,
+          errorCode: (sentimentError as APIError).code || "SENTIMENT_ERROR",
+          title: formattedError.title,
+          action: formattedError.action,
+        },
+        { status: 500 }
+      );
+    }
 
     // Calculate statistics
     const stats = calculateSentimentStats(sentimentResults);
@@ -140,16 +177,22 @@ export async function POST(request: NextRequest) {
     // Generate word cloud
     const wordCloud = generateWordCloud(analyzedComments.map((c) => c.text));
 
-    // Generate AI Insight if premium
+    // Generate AI Insight if premium (with retry mechanism built-in)
     let aiInsight = null;
     if (isPremium) {
       const openRouterKey = process.env.OPENROUTER_API_KEY;
-      aiInsight = await generateAIInsight(
-        { title: videoInfo.title, totalComments: stats.total },
-        { positive: stats.positive, negative: stats.negative, neutral: stats.neutral },
-        analyzedComments,
-        openRouterKey
-      );
+      try {
+        aiInsight = await generateAIInsight(
+          { title: videoInfo.title, totalComments: stats.total },
+          { positive: stats.positive, negative: stats.negative, neutral: stats.neutral },
+          analyzedComments,
+          openRouterKey
+        );
+      } catch (insightError: any) {
+        console.error("AI insight generation error:", insightError);
+        // AI insight is optional - continue without it
+        aiInsight = null;
+      }
     }
 
     const resultSnapshot = {
@@ -265,8 +308,16 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error("Analysis error:", error);
+    
+    const formattedError = formatErrorForUser(error as Error);
+    
     return NextResponse.json(
-      { error: "Terjadi kesalahan saat menganalisis" },
+      { 
+        error: formattedError.message,
+        errorCode: "ANALYSIS_ERROR",
+        title: formattedError.title,
+        action: formattedError.action,
+      },
       { status: 500 }
     );
   }
