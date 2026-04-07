@@ -10,7 +10,7 @@ import { WordCloud } from "@/components/dashboard/word-cloud";
 import { AIInsight } from "@/components/dashboard/ai-insight";
 import { ArrowLeft, Download, Filter, MessageSquare, AlertCircle, Info } from "lucide-react";
 import Link from "next/link";
-import type { AnalysisResult } from "@/lib/types/analysis-result";
+import type { AnalysisResult, AnalysisComment } from "@/lib/types/analysis-result";
 
 interface AnalysisResultViewProps {
   result: AnalysisResult;
@@ -24,6 +24,7 @@ interface AnalysisResultViewProps {
     message: string;
     action?: { label: string; href: string };
   } | null;
+  allComments?: AnalysisComment[];
 }
 
 export function AnalysisResultView({
@@ -32,6 +33,7 @@ export function AnalysisResultView({
   subtitle,
   demoWarning,
   demoBadge,
+  allComments,
 }: AnalysisResultViewProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "comments">("overview");
   const [sentimentFilter, setSentimentFilter] = useState<
@@ -43,10 +45,24 @@ export function AnalysisResultView({
   );
 
   const handleExport = () => {
-    const dataStr = JSON.stringify(result, null, 2);
+    // Use allComments if available, otherwise fall back to comments (sample)
+    const commentsToExport = allComments || result.comments;
+    
+    const exportData = {
+      ...result,
+      comments: commentsToExport,
+      exportInfo: {
+        format: "json",
+        exportedAt: new Date().toISOString(),
+        totalComments: commentsToExport.length,
+        sampleComments: result.comments.length,
+      },
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri =
       "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-    const exportFileDefaultName = `analysis-${result.videoInfo.id}.json`;
+    const exportFileDefaultName = `analysis-${result.videoInfo.id}-${new Date().toISOString().split("T")[0]}.json`;
     const linkElement = document.createElement("a");
     linkElement.setAttribute("href", dataUri);
     linkElement.setAttribute("download", exportFileDefaultName);

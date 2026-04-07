@@ -239,9 +239,10 @@ export async function POST(request: NextRequest) {
     };
 
     // Save to database and deduct credits
+    let savedAnalysisId: string | undefined;
     try {
       if (user) {
-        await supabase.from("analysis_history").insert({
+        const { data: insertedData, error: insertError } = await supabase.from("analysis_history").insert({
           user_id: user.id,
           video_url: url,
           video_title: videoInfo.title,
@@ -253,7 +254,13 @@ export async function POST(request: NextRequest) {
           credits_used: creditsUsed,
           is_premium: isPremium,
           result_snapshot: resultSnapshot,
-        });
+        }).select("id").single();
+
+        if (insertError) {
+          console.error("Failed to save analysis:", insertError);
+        } else if (insertedData) {
+          savedAnalysisId = insertedData.id;
+        }
 
         try {
           const { data: currentProfile } = adminClient
@@ -314,6 +321,8 @@ export async function POST(request: NextRequest) {
       },
       percentages: stats.percentages,
       comments: analyzedComments.slice(0, 100),
+      allComments: analyzedComments,
+      analysisId: savedAnalysisId,
       creditsUsed,
       aiInsight,
       wordCloud,
@@ -407,6 +416,8 @@ async function getHuggingFaceDemoData(videoId: string, isPremium: boolean) {
       neutral: ((neutral / total) * 100).toFixed(1),
     },
     comments: allComments.slice(0, 100),
+    allComments: allComments,
+    analysisId: undefined,
     creditsUsed,
     aiInsight: isPremium ? {
       summary: `Dari ${total} komentar yang dianalisis, mayoritas penonton (${((positive/total)*100).toFixed(0)}%) merespons positif terhadap video ini. Sentimen positif menunjukkan konten yang berkualitas dan engaging. Namun, ada beberapa area yang perlu diperbaiki.`,

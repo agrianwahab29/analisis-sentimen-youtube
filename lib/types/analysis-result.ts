@@ -36,6 +36,8 @@ export interface AnalysisResult {
   } | null;
   wordCloud: Array<{ text: string; value: number }>;
   comments: AnalysisComment[];
+  allComments?: AnalysisComment[];
+  analysisId?: string;
   demo?: boolean;
   message?: string;
   demoBadge?: {
