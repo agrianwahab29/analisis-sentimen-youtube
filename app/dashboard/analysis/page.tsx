@@ -44,8 +44,24 @@ function AnalysisContent() {
         });
 
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || "Gagal menganalisis video");
+          let errorMessage = "Gagal menganalisis video";
+          try {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const data = await response.json();
+              errorMessage = data.error || data.message || `Error ${response.status}: ${response.statusText}`;
+            } else {
+              // Non-JSON response (HTML error page, etc.)
+              const text = await response.text();
+              console.error("Non-JSON error response:", text.substring(0, 200));
+              errorMessage = `Server error ${response.status}. Silakan coba lagi.`;
+            }
+          } catch (parseError) {
+            // JSON parsing failed
+            console.error("Failed to parse error response:", parseError);
+            errorMessage = `Error ${response.status}: ${response.statusText || 'Server error'}`;
+          }
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();
