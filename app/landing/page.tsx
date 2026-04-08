@@ -277,7 +277,7 @@ export default function LandingPage() {
                 icon: Clock,
               },
               {
-                value: "10",
+                value: "75",
                 label: "Kredit Gratis",
                 sub: "tanpa kartu kredit",
                 icon: Star,
@@ -828,7 +828,7 @@ export default function LandingPage() {
             Siap Memahami Audiens Anda?
           </h2>
           <p className="text-lg text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Mulai analisis sentimen YouTube hari ini. 10 kredit gratis, tanpa
+            Mulai analisis sentimen YouTube hari ini. 75 kredit gratis, tanpa
             kartu kredit.
           </p>
           <Link
