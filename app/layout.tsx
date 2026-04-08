@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "VidSense AI - Analisis Sentimen YouTube",
   description: "Platform AI untuk menganalisis sentimen komentar YouTube dengan mudah dan akurat",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
