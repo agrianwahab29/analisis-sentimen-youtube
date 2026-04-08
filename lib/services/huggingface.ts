@@ -63,8 +63,8 @@ export async function analyzeSentimentHuggingFace(text: string): Promise<Sentime
     },
     {
       maxRetries: 3,
-      baseDelay: 2000, // Longer delay for HuggingFace (model loading)
-      maxDelay: 15000,
+      baseDelay: 1000, // Reduced from 2000 for faster retry
+      maxDelay: 8000,  // Reduced from 15000 for faster recovery
       backoffMultiplier: 2,
     },
     classifyHuggingFaceError
@@ -78,34 +78,54 @@ export async function analyzeSentimentHuggingFace(text: string): Promise<Sentime
 /**
  * Analyze batch dengan HuggingFace
  * Process in chunks untuk menghindari rate limit
+ * Optimized: batch size 32, parallel batch processing (5 concurrent)
  */
 export async function analyzeSentimentBatch(texts: string[]): Promise<SentimentResult[]> {
-  const results: SentimentResult[] = [];
-  const batchSize = 10; // HuggingFace rate limit
+  const batchSize = 32; // HuggingFace free tier: 30k tokens/min, ~20 tokens/sentence → safe
+  const PARALLEL_BATCHES = 5; // Process 5 batches concurrently
 
+  // Split texts into batches
+  const batches: string[][] = [];
   for (let i = 0; i < texts.length; i += batchSize) {
-    const batch = texts.slice(i, i + batchSize);
-    
-    try {
-      // Try HuggingFace API
-      const batchResults = await Promise.all(
-        batch.map(text => analyzeSentimentHuggingFace(text))
-      );
-      results.push(...batchResults);
-    } catch (error) {
-      // Fallback ke keyword-based
-      console.log("HuggingFace unavailable, using keyword fallback");
-      const fallbackResults = batch.map(text => analyzeSentimentKeyword(text));
-      results.push(...fallbackResults);
+    batches.push(texts.slice(i, i + batchSize));
+  }
+
+  // Process batches in parallel chunks of PARALLEL_BATCHES
+  const allResults: SentimentResult[] = [];
+
+  for (let chunkStart = 0; chunkStart < batches.length; chunkStart += PARALLEL_BATCHES) {
+    const chunk = batches.slice(chunkStart, chunkStart + PARALLEL_BATCHES);
+
+    const chunkResults = await Promise.all(
+      chunk.map(async (batch) => {
+        const batchResults: SentimentResult[] = [];
+        try {
+          // Process all texts in this batch using HuggingFace API in parallel
+          const hfResults = await Promise.all(
+            batch.map(text => analyzeSentimentHuggingFace(text))
+          );
+          batchResults.push(...hfResults);
+        } catch (error) {
+          // Fallback ke keyword-based for entire batch
+          console.log("HuggingFace unavailable, using keyword fallback");
+          const fallbackResults = batch.map(text => analyzeSentimentKeyword(text));
+          batchResults.push(...fallbackResults);
+        }
+        return batchResults;
+      })
+    );
+
+    for (const results of chunkResults) {
+      allResults.push(...results);
     }
 
-    // Rate limiting delay
-    if (i + batchSize < texts.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+    // Minimal delay between parallel chunks (reduced from 100ms to 20ms)
+    if (chunkStart + PARALLEL_BATCHES < batches.length) {
+      await new Promise(resolve => setTimeout(resolve, 20));
     }
   }
 
-  return results;
+  return allResults;
 }
 
 /**

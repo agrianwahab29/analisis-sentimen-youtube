@@ -74,7 +74,45 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    
+
+    // === CACHE CHECK ===
+    // Check if we have a recent analysis for this video (within 24 hours)
+    if (user) {
+      try {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: cachedAnalysis } = await supabase
+          .from("analysis_history")
+          .select("id, result_snapshot, created_at")
+          .eq("user_id", user.id)
+          .eq("video_id", videoId)
+          .gte("created_at", twentyFourHoursAgo)
+          .not("result_snapshot", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (cachedAnalysis?.result_snapshot) {
+          const snapshot = cachedAnalysis.result_snapshot as Record<string, any>;
+          const cacheAgeMinutes = Math.round(
+            (Date.now() - new Date(cachedAnalysis.created_at).getTime()) / 60000
+          );
+
+          return NextResponse.json({
+            ...snapshot,
+            success: true,
+            analysisId: cachedAnalysis.id,
+            fromCache: true,
+            cacheAge: cacheAgeMinutes,
+            comments: snapshot.comments,
+            allComments: snapshot.comments,
+          });
+        }
+      } catch (cacheError) {
+        // Cache lookup failed - proceed with fresh analysis
+        console.log("Cache lookup failed, proceeding with fresh analysis");
+      }
+    }
+
     if (!youtubeApiKey || youtubeApiKey === "your_youtube_api_key_here") {
       // Use HuggingFace model with demo data
       const demoResult = await getHuggingFaceDemoData(videoId, isPremium);
@@ -100,7 +138,7 @@ export async function POST(request: NextRequest) {
     try {
       [videoInfo, rawComments] = await Promise.all([
         getVideoInfo(videoId),
-        getVideoComments(videoId, 5000),
+        getVideoComments(videoId, 1000),
       ]);
     } catch (youtubeError: any) {
       console.error("YouTube API error:", youtubeError);
