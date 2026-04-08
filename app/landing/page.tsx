@@ -775,7 +775,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 max-w-3xl mx-auto">
             {[
               {
                 name: "HuggingFace",
@@ -792,38 +792,6 @@ export default function LandingPage() {
                 color: "from-red-500/20 to-red-600/10",
                 iconColor: "text-red-400",
                 border: "border-red-500/20",
-              },
-              {
-                name: "OpenRouter",
-                desc: "LLM-powered AI Insight untuk ringkasan dan rekomendasi mendalam",
-                icon: Brain,
-                color: "from-violet-500/20 to-violet-600/10",
-                iconColor: "text-violet-400",
-                border: "border-violet-500/20",
-              },
-              {
-                name: "Vercel",
-                desc: "Edge deployment yang cepat dan reliable secara global",
-                icon: Globe,
-                color: "from-slate-400/20 to-slate-500/10",
-                iconColor: "text-slate-300",
-                border: "border-slate-500/20",
-              },
-              {
-                name: "Supabase",
-                desc: "Database PostgreSQL dengan real-time subscriptions dan auth",
-                icon: Database,
-                color: "from-emerald-500/20 to-emerald-600/10",
-                iconColor: "text-emerald-400",
-                border: "border-emerald-500/20",
-              },
-              {
-                name: "Next.js",
-                desc: "Full-stack React framework dengan server-side rendering",
-                icon: Lightbulb,
-                color: "from-blue-500/20 to-cyan-500/10",
-                iconColor: "text-blue-400",
-                border: "border-blue-500/20",
               },
             ].map((tech) => (
               <div
