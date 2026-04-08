@@ -127,7 +127,7 @@ export default function LandingPage() {
               </div>
 
               <p className="text-sm text-slate-500">
-                10 kredit gratis · Tanpa kartu kredit · Hasil dalam ~13 detik
+                75 kredit gratis · Tanpa kartu kredit · Hasil dalam ~13 detik
               </p>
             </div>
 
