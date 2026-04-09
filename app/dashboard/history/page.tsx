@@ -166,28 +166,28 @@ export default function HistoryPage() {
             transition={{ delay: 0.1 }}
             className="rounded-xl border border-slate-200 bg-white card-shadow overflow-hidden"
           >
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-4 md:-mx-6">
+              <table className="w-full min-w-[700px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Video</th>
-                    <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tanggal</th>
-                    <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Sentimen</th>
-                    <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipe</th>
-                    <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kredit</th>
-                    <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Detail</th>
+                    <th className="text-left px-3 md:px-6 py-3 md:py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Video</th>
+                    <th className="text-left px-3 md:px-6 py-3 md:py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tanggal</th>
+                    <th className="text-left px-3 md:px-6 py-3 md:py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Sentimen</th>
+                    <th className="text-left px-3 md:px-6 py-3 md:py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipe</th>
+                    <th className="text-right px-3 md:px-6 py-3 md:py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kredit</th>
+                    <th className="text-right px-3 md:px-6 py-3 md:py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Detail</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {history.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-3 md:px-6 py-3 md:py-4">
                         <div className="flex items-center gap-3">
                           {item.video_id && (
-                            <img src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`} alt="" className="h-12 w-16 object-cover rounded-lg" />
+                            <img src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`} alt="" className="h-10 w-14 md:h-12 md:w-16 object-cover rounded-lg flex-shrink-0" />
                           )}
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate max-w-xs">{item.video_title || "Untitled"}</p>
+                            <p className="text-sm font-medium text-slate-900 truncate max-w-[120px] md:max-w-xs">{item.video_title || "Untitled"}</p>
                             <p className="text-xs text-slate-500">{item.total_comments} komentar</p>
                             {!item.result_snapshot && (
                               <span className="text-xs text-amber-600">• Data ringkasan saja</span>
@@ -195,27 +195,27 @@ export default function HistoryPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4"><p className="text-sm text-slate-600">{formatDate(item.created_at)}</p></td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">{item.positive_count}</span>
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700">{item.negative_count}</span>
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{item.neutral_count}</span>
+                      <td className="px-3 md:px-6 py-3 md:py-4"><p className="text-xs md:text-sm text-slate-600">{formatDate(item.created_at)}</p></td>
+                      <td className="px-3 md:px-6 py-3 md:py-4">
+                        <div className="flex items-center gap-1 md:gap-2">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">{item.positive_count}</span>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700">{item.negative_count}</span>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{item.neutral_count}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${item.is_premium ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+                      <td className="px-3 md:px-6 py-3 md:py-4">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${item.is_premium ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
                           {item.is_premium ? "Premium" : "Basic"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right"><span className="text-sm font-medium text-amber-600">{item.credits_used}</span></td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-right"><span className="text-sm font-medium text-amber-600">{item.credits_used}</span></td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-right">
                         <Link
                           href={`/dashboard/history/${item.id}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-blue-300 hover:text-blue-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 md:px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-blue-300 hover:text-blue-700 transition-colors min-h-[32px]"
                         >
                           <Eye className="h-3.5 w-3.5" />
-                          Lihat
+                          <span className="hidden sm:inline">Lihat</span>
                         </Link>
                       </td>
                     </tr>
@@ -226,21 +226,21 @@ export default function HistoryPage() {
             
             {/* Server-side Pagination */}
             {pagination && pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 md:px-6 py-4 border-t border-slate-200">
                 <button 
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} 
                   disabled={!pagination.hasPrevPage} 
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition-colors"
+                  className="flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition-colors min-h-[40px] w-full sm:w-auto"
                 >
                   <ChevronLeft className="h-4 w-4" /> Sebelumnya
                 </button>
-                <span className="text-sm text-slate-500">
+                <span className="text-xs md:text-sm text-slate-500 order-first sm:order-none">
                   Halaman {pagination.page} dari {pagination.totalPages} ({pagination.total} total)
                 </span>
                 <button 
                   onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))} 
                   disabled={!pagination.hasNextPage} 
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition-colors"
+                  className="flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition-colors min-h-[40px] w-full sm:w-auto"
                 >
                   Selanjutnya <ChevronRight className="h-4 w-4" />
                 </button>

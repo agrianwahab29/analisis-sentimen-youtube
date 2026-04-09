@@ -127,7 +127,7 @@ export function AnalysisResultView({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-start gap-4 p-6 rounded-xl border border-slate-200 bg-white card-shadow"
+          className="flex flex-col md:flex-row md:items-start gap-4 p-4 md:p-6 rounded-xl border border-slate-200 bg-white card-shadow"
         >
           <Link
             href={backHref}
@@ -136,21 +136,21 @@ export function AnalysisResultView({
             <ArrowLeft className="h-5 w-5 text-slate-600" />
           </Link>
 
-          <div className="flex gap-4 flex-1">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
             <img
               src={result.videoInfo.thumbnail}
               alt={result.videoInfo.title}
-              className="h-24 w-40 object-cover rounded-lg flex-shrink-0"
+              className="h-24 w-full sm:w-40 object-cover rounded-lg flex-shrink-0"
             />
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-semibold text-slate-900 font-heading line-clamp-2">
+              <h1 className="text-lg md:text-xl font-semibold text-slate-900 font-heading line-clamp-2">
                 {result.videoInfo.title}
               </h1>
               <p className="text-sm text-slate-500 mt-1">{result.videoInfo.channelTitle}</p>
               {subtitle && (
                 <p className="text-xs text-slate-400 mt-1">{subtitle}</p>
               )}
-              <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-500">
+              <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-2 text-xs md:text-sm text-slate-500">
                 <span>{result.videoInfo.totalComments.toLocaleString("id-ID")} komentar</span>
                 <span>{result.videoInfo.viewCount.toLocaleString("id-ID")} views</span>
                 <span>{result.videoInfo.likeCount.toLocaleString("id-ID")} likes</span>
@@ -158,24 +158,24 @@ export function AnalysisResultView({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm text-slate-500">Kredit digunakan</p>
-              <p className="text-2xl font-bold text-amber-600">{result.creditsUsed}</p>
+          <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-0 border-slate-100">
+            <div className="text-left md:text-right">
+              <p className="text-xs md:text-sm text-slate-500">Kredit digunakan</p>
+              <p className="text-xl md:text-2xl font-bold text-amber-600">{result.creditsUsed}</p>
             </div>
             <button
               type="button"
               onClick={handleExport}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:border-slate-300 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:border-slate-300 transition-colors min-h-[40px]"
             >
               <Download className="h-4 w-4" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </button>
           </div>
         </motion.div>
 
-        <div className="border-b border-slate-200">
-          <nav className="-mb-px flex gap-6">
+        <div className="border-b border-slate-200 overflow-x-auto">
+          <nav className="-mb-px flex gap-4 md:gap-6 min-w-max">
             {(
               [
                 { id: "overview", label: "Ringkasan", icon: null },
@@ -186,7 +186,7 @@ export function AnalysisResultView({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors min-h-[48px] ${
                   activeTab === tab.id
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
@@ -284,18 +284,20 @@ export function AnalysisResultView({
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-wrap items-center justify-between gap-4"
+              className="flex flex-col gap-4"
             >
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-slate-500" />
-                <span className="text-sm font-medium text-slate-700">Filter:</span>
-                <div className="flex gap-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm font-medium text-slate-700">Filter:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
                   {(["all", "positive", "negative", "neutral"] as const).map((filter) => (
                     <button
                       key={filter}
                       type="button"
                       onClick={() => setSentimentFilter(filter)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[32px] ${
                         sentimentFilter === filter
                           ? filter === "positive"
                             ? "bg-emerald-100 text-emerald-700"
@@ -313,7 +315,7 @@ export function AnalysisResultView({
                 </div>
               </div>
 
-              <span className="text-sm text-slate-500">
+              <span className="text-xs md:text-sm text-slate-500">
                 Menampilkan {filteredComments.length} dari {result.comments.length} sampel komentar
                 {" "}
                 ({result.sentimentStats.total.toLocaleString("id-ID")} total dianalisis)
@@ -326,17 +328,17 @@ export function AnalysisResultView({
               transition={{ delay: 0.1 }}
               className="rounded-xl border border-slate-200 bg-white card-shadow overflow-hidden"
             >
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto -mx-4 md:-mx-6">
+                <table className="w-full min-w-[500px]">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="text-left px-3 md:px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Komentar
                       </th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="text-left px-3 md:px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Sentimen
                       </th>
-                      <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="text-right px-3 md:px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Likes
                       </th>
                     </tr>
@@ -350,15 +352,15 @@ export function AnalysisResultView({
                         transition={{ delay: index * 0.02 }}
                         className="hover:bg-slate-50/50 transition-colors"
                       >
-                        <td className="px-6 py-3">
+                        <td className="px-3 md:px-6 py-3">
                           <div>
                             <p className="text-sm text-slate-900 line-clamp-2">{comment.text}</p>
                             <p className="text-xs text-slate-500 mt-1">@{comment.author}</p>
                           </div>
                         </td>
-                        <td className="px-6 py-3">
+                        <td className="px-3 md:px-6 py-3">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                               comment.sentiment === "positive"
                                 ? "bg-emerald-100 text-emerald-700"
                                 : comment.sentiment === "negative"
@@ -373,7 +375,7 @@ export function AnalysisResultView({
                                 : "Netral"}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-right">
+                        <td className="px-3 md:px-6 py-3 text-right">
                           <span className="text-sm text-slate-600">
                             {comment.likes.toLocaleString("id-ID")}
                           </span>

@@ -221,18 +221,18 @@ export default function SettingsPage() {
           transition={{ duration: 0.3, delay: 0.1 }}
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                 <Shield className="h-5 w-5 text-slate-500" />
                 Akun
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs md:text-sm">
                 Informasi akun dan keamanan
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 md:space-y-4">
               {/* Email */}
-              <div className="flex items-center justify-between py-3">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 py-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
                     <Mail className="h-5 w-5 text-blue-500" />
@@ -251,7 +251,7 @@ export default function SettingsPage() {
               <Separator />
 
               {/* Account Type */}
-              <div className="flex items-center justify-between py-3">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 py-3">
                 <div>
                   <p className="text-sm font-medium text-slate-900">Tipe Akun</p>
                   <p className="text-xs text-slate-500">Paket langganan Anda</p>
@@ -272,22 +272,22 @@ export default function SettingsPage() {
           transition={{ duration: 0.3, delay: 0.2 }}
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                 <Bell className="h-5 w-5 text-slate-500" />
                 Notifikasi
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs md:text-sm">
                 Pilih notifikasi yang ingin Anda terima
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+            <CardContent className="space-y-2 md:space-y-4">
+              <div className="flex items-center justify-between gap-3 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 flex-shrink-0">
                     <Mail className="h-5 w-5 text-blue-500" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-900">Notifikasi Email</p>
                     <p className="text-xs text-slate-500">Terima notifikasi melalui email</p>
                   </div>
@@ -301,12 +301,12 @@ export default function SettingsPage() {
 
               <Separator />
 
-              <div className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+              <div className="flex items-center justify-between gap-3 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 flex-shrink-0">
                     <CheckCircle className="h-5 w-5 text-emerald-500" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-900">Analisis Selesai</p>
                     <p className="text-xs text-slate-500">Notifikasi saat analisis selesai</p>
                   </div>
@@ -320,14 +320,14 @@ export default function SettingsPage() {
 
               <Separator />
 
-              <div className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+              <div className="flex items-center justify-between gap-3 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 flex-shrink-0">
                     <AlertTriangle className="h-5 w-5 text-amber-500" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-900">Peringatan Keamanan</p>
-                    <p className="text-xs text-slate-500">Notifikasi penting keamanan</p>
+                    <p className="-xs text-slate-500">Notifikasi penting keamanan</p>
                   </div>
                 </div>
                 <Switch
@@ -348,17 +348,17 @@ export default function SettingsPage() {
             transition={{ duration: 0.3, delay: 0.3 }}
           >
             <Card className="border-red-200 bg-red-50/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-red-600">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-red-600 text-base md:text-lg">
                   <AlertTriangle className="h-5 w-5" />
                   Zona Berbahaya
                 </CardTitle>
-                <CardDescription className="text-red-700">
+                <CardDescription className="text-red-700 text-xs md:text-sm">
                   Tindakan yang tidak dapat dibatalkan
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start justify-between gap-4 py-3">
+              <CardContent className="space-y-3 md:space-y-4">
+                <div className="flex flex-col md:flex-row items-start justify-between gap-4 py-3">
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-100">
                       <Trash2 className="h-5 w-5 text-red-600" />
@@ -376,29 +376,30 @@ export default function SettingsPage() {
                         variant="destructive"
                         size="sm"
                         disabled={isDeleting}
+                        className="w-full md:w-auto min-h-[40px]"
                       >
                         Hapus Akun
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-md max-w-[calc(100%-2rem)] mx-4">
                       <DialogHeader>
-                        <DialogTitle className="text-red-600">Hapus Akun Permanen</DialogTitle>
+                        <DialogTitle className="text-red-600 text-base md:text-lg">Hapus Akun Permanen</DialogTitle>
                         <DialogDescription>
                           <div className="space-y-3 mt-2">
-                            <p className="font-medium text-red-700">
+                            <p className="font-medium text-red-700 text-sm">
                               Tindakan ini TIDAK DAPAT dibatalkan.
                             </p>
-                            <p>
+                            <p className="text-xs md:text-sm">
                               Semua data Anda akan dihapus secara permanen, termasuk:
                             </p>
-                            <ul className="list-disc list-inside space-y-1 text-sm">
+                            <ul className="list-disc list-inside space-y-1 text-xs md:text-sm">
                               <li>Profil akun Anda</li>
                               <li>Riwayat analisis</li>
                               <li>Semua kredit yang tersisa</li>
                               <li>Pengaturan dan preferensi</li>
                             </ul>
                             <div className="mt-4 space-y-2">
-                              <p className="text-sm font-medium">
+                              <p className="text-xs md:text-sm font-medium">
                                 Ketik <strong className="text-red-600">HAPUS</strong> di bawah ini untuk melanjutkan:
                               </p>
                               <input
@@ -406,14 +407,14 @@ export default function SettingsPage() {
                                 value={deleteConfirmText}
                                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                                 placeholder="Ketik HAPUS di sini"
-                                className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                                className="w-full px-3 py-2.5 md:py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                                 disabled={isDeleting}
                               />
                             </div>
                           </div>
                         </DialogDescription>
                       </DialogHeader>
-                      <DialogFooter>
+                      <DialogFooter className="flex-col md:flex-row gap-2">
                         <Button
                           variant="outline"
                           onClick={() => {
@@ -421,6 +422,7 @@ export default function SettingsPage() {
                             setDeleteConfirmText("");
                           }}
                           disabled={isDeleting}
+                          className="w-full md:w-auto min-h-[40px]"
                         >
                           Batal
                         </Button>
@@ -428,6 +430,7 @@ export default function SettingsPage() {
                           variant="destructive"
                           onClick={handleDeleteAccount}
                           disabled={isDeleting || deleteConfirmText !== "HAPUS"}
+                          className="w-full md:w-auto min-h-[40px]"
                         >
                           {isDeleting ? (
                             <>

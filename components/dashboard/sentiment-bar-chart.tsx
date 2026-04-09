@@ -46,7 +46,7 @@ export function SentimentBarChart({ data }: SentimentBarChartProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.2 }}
-      className="rounded-xl border border-slate-200 bg-white p-6 card-shadow"
+      className="rounded-xl border border-slate-200 bg-white p-4 md:p-6 card-shadow"
     >
       <div className="flex items-center gap-3 mb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 border border-blue-100">
@@ -55,12 +55,12 @@ export function SentimentBarChart({ data }: SentimentBarChartProps) {
           </svg>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 font-heading">Jumlah Komentar</h3>
-          <p className="text-sm text-slate-500">Perbandingan jumlah per sentimen</p>
+          <h3 className="text-base md:text-lg font-semibold text-slate-900 font-heading">Jumlah Komentar</h3>
+          <p className="text-xs md:text-sm text-slate-500">Perbandingan jumlah per sentimen</p>
         </div>
       </div>
 
-      <div className="h-64">
+      <div className="h-56 md:h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />

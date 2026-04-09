@@ -48,10 +48,10 @@ export function SentimentCard({ type, count, percentage, trend }: SentimentCardP
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
-      className="group relative overflow-hidden rounded-xl border bg-white p-6 card-shadow hover:card-shadow-hover transition-all duration-300"
+      className="group relative overflow-hidden rounded-xl border bg-white p-4 md:p-6 card-shadow hover:card-shadow-hover transition-all duration-300"
     >
       {/* Icon and Label */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3 md:mb-4">
         <div className="flex items-center gap-3">
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-lg border ${config.bgColor} ${config.borderColor}`}
@@ -73,11 +73,11 @@ export function SentimentCard({ type, count, percentage, trend }: SentimentCardP
       </div>
 
       {/* Count and Percentage */}
-      <div className="flex items-baseline gap-2 mb-4">
-        <span className="text-3xl font-bold text-slate-900 font-heading tracking-tight">
+      <div className="flex items-baseline gap-2 mb-3 md:mb-4">
+        <span className="text-2xl md:text-3xl font-bold text-slate-900 font-heading tracking-tight">
           {formattedCount}
         </span>
-        <span className="text-sm text-slate-500">komentar</span>
+        <span className="text-xs md:text-sm text-slate-500">komentar</span>
       </div>
 
       {/* Percentage Bar */}

@@ -17,7 +17,7 @@ export function WordCloud({ words }: WordCloudProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.3 }}
-        className="rounded-xl border border-slate-200 bg-white p-6 card-shadow"
+        className="rounded-xl border border-slate-200 bg-white p-4 md:p-6 card-shadow"
       >
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
@@ -50,7 +50,7 @@ export function WordCloud({ words }: WordCloudProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.3 }}
-        className="rounded-xl border border-slate-200 bg-white p-6 card-shadow"
+        className="rounded-xl border border-slate-200 bg-white p-4 md:p-6 card-shadow"
       >
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 border border-amber-100">
@@ -79,13 +79,13 @@ export function WordCloud({ words }: WordCloudProps) {
   }
 
   // Normal word cloud for sufficient data
-  // Calculate font size based on value (min 14px, max 48px)
+  // Calculate font size based on value (mobile: min 12px, max 32px; desktop: min 14px, max 48px)
   const maxValue = Math.max(...words.map(w => w.value));
   const minValue = Math.min(...words.map(w => w.value));
   
-  const getFontSize = (value: number) => {
-    const minSize = 14;
-    const maxSize = 48;
+  const getFontSize = (value: number, isMobile = false) => {
+    const minSize = isMobile ? 12 : 14;
+    const maxSize = isMobile ? 28 : 40;
     return minSize + ((value - minValue) / (maxValue - minValue)) * (maxSize - minSize);
   };
 
@@ -108,7 +108,7 @@ export function WordCloud({ words }: WordCloudProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.3 }}
-      className="rounded-xl border border-slate-200 bg-white p-6 card-shadow"
+      className="rounded-xl border border-slate-200 bg-white p-4 md:p-6 card-shadow"
     >
       <div className="flex items-center gap-3 mb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 border border-blue-100">
@@ -117,12 +117,12 @@ export function WordCloud({ words }: WordCloudProps) {
           </svg>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 font-heading">Kata Populer</h3>
-          <p className="text-sm text-slate-500">Kata yang paling sering muncul dalam komentar</p>
+          <h3 className="text-base md:text-lg font-semibold text-slate-900 font-heading">Kata Populer</h3>
+          <p className="text-xs md:text-sm text-slate-500">Kata yang paling sering muncul dalam komentar</p>
         </div>
       </div>
 
-      <div className="min-h-[300px] flex flex-wrap items-center justify-center gap-3 p-4">
+      <div className="min-h-[200px] md:min-h-[300px] flex flex-wrap items-center justify-center gap-2 md:gap-3 p-2 md:p-4">
         {words.map((word, index) => (
           <motion.span
             key={word.text}
@@ -130,9 +130,8 @@ export function WordCloud({ words }: WordCloudProps) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
             whileHover={{ scale: 1.1 }}
-            className="cursor-pointer transition-all duration-200"
+            className="cursor-pointer transition-all duration-200 text-[clamp(12px,2vw,28px)] md:text-[clamp(14px,3vw,36px)]"
             style={{
-              fontSize: `${getFontSize(word.value)}px`,
               color: getColor(index),
               fontWeight: word.value > (maxValue + minValue) / 2 ? 700 : 500,
             }}

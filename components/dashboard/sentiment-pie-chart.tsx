@@ -51,7 +51,7 @@ export function SentimentPieChart({ data }: SentimentPieChartProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.1 }}
-      className="rounded-xl border border-slate-200 bg-white p-6 card-shadow"
+      className="rounded-xl border border-slate-200 bg-white p-4 md:p-6 card-shadow"
     >
       <div className="flex items-center gap-3 mb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 border border-blue-100">
@@ -61,12 +61,12 @@ export function SentimentPieChart({ data }: SentimentPieChartProps) {
           </svg>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 font-heading">Distribusi Sentimen</h3>
-          <p className="text-sm text-slate-500">Persentase sentimen komentar</p>
+          <h3 className="text-base md:text-lg font-semibold text-slate-900 font-heading">Distribusi Sentimen</h3>
+          <p className="text-xs md:text-sm text-slate-500">Persentase sentimen komentar</p>
         </div>
       </div>
 
-      <div className="h-64">
+      <div className="h-56 md:h-64">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
