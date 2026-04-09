@@ -1,12 +1,12 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Sidebar } from "./sidebar";
+import { Sidebar, MobileMenuButton } from "./sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { normalizeCreditBalance } from "@/lib/normalize-credit-balance";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Plus } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -17,24 +17,41 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const credits = normalizeCreditBalance(
     user ? (user as Record<string, unknown>).credit_balance : undefined
   );
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Sidebar */}
-      <Sidebar />
+      {/* Sidebar - Desktop only, Mobile drawer handled inside Sidebar */}
+      <Sidebar isMobile isOpen={mobileMenuOpen} onToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
 
       {/* Main Content */}
-      <div className="pl-64">
+      <div className="md:pl-64">
         {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-6 backdrop-blur-xl">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-slate-900 font-heading">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-4 md:px-6 backdrop-blur-xl">
+          <div className="flex items-center gap-3 md:gap-4">
+            {/* Mobile hamburger menu */}
+            <MobileMenuButton onClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
+            <h1 className="text-lg md:text-xl font-semibold text-slate-900 font-heading">
               Dashboard
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/topup">
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Mobile: compact credit badge */}
+            <Link href="/dashboard/topup" className="md:hidden">
+              <motion.div
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 px-3 py-1.5"
+              >
+                <Sparkles className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-bold text-slate-900 font-heading">
+                  {new Intl.NumberFormat("id-ID").format(credits)}
+                </span>
+              </motion.div>
+            </Link>
+
+            {/* Desktop: full credit badge */}
+            <Link href="/dashboard/topup" className="hidden md:block">
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -60,9 +77,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="ml-2 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+                  className="ml-2 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center gap-1"
                 >
-                  + Top Up
+                  <Plus className="h-3 w-3" />
+                  Top Up
                 </motion.button>
               </motion.div>
             </Link>
@@ -74,7 +92,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="p-6"
+          className="p-4 md:p-6"
         >
           {children}
         </motion.main>

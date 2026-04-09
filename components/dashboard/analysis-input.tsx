@@ -105,22 +105,24 @@ export function AnalysisInput() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="rounded-xl border border-slate-200 bg-white p-6 card-shadow"
+        className="rounded-xl border border-slate-200 bg-white p-4 md:p-6 card-shadow"
       >
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 border border-blue-100">
-            <Link2 className="h-5 w-5 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900 font-heading">
-              Analisis Video YouTube
-            </h2>
-            <p className="text-sm text-slate-500">
-              Masukkan URL video untuk menganalisis sentimen komentar
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 md:mb-6">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 border border-blue-100 shrink-0">
+              <Link2 className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base md:text-lg font-semibold text-slate-900 font-heading">
+                Analisis Video YouTube
+              </h2>
+              <p className="text-xs md:text-sm text-slate-500">
+                Masukkan URL video untuk menganalisis sentimen komentar
+              </p>
+            </div>
           </div>
           {userCredits !== null && (
-            <div className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 shrink-0 sm:ml-auto">
               <Wallet className="h-4 w-4 text-amber-600" />
               <span className="text-sm font-medium text-amber-700">{userCredits} kredit</span>
             </div>
@@ -161,32 +163,37 @@ export function AnalysisInput() {
           </div>
 
           {/* Premium Toggle */}
-          <div className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+          <div className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-lg border p-3 transition-colors ${
             userCredits !== null && userCredits < (isPremium ? 15 : 5) 
               ? "border-rose-200 bg-rose-50" 
               : "border-slate-100 bg-slate-50"
           }`}>
-            <button
-              onClick={() => setIsPremium(!isPremium)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isPremium ? "bg-blue-500" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isPremium ? "translate-x-6" : "translate-x-1"
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsPremium(!isPremium)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                  isPremium ? "bg-blue-500" : "bg-slate-300"
                 }`}
-              />
-            </button>
+                role="switch"
+                aria-checked={isPremium}
+                aria-label="Toggle premium analysis"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isPremium ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
 
-            <div className="flex items-center gap-2">
-              <Sparkles className={`h-4 w-4 ${isPremium ? "text-amber-500" : "text-slate-400"}`} />
-              <span className="text-sm font-medium text-slate-700">
-                Analisis Premium (AI Insight)
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className={`h-4 w-4 shrink-0 ${isPremium ? "text-amber-500" : "text-slate-400"}`} />
+                <span className="text-sm font-medium text-slate-700">
+                  Analisis Premium (AI Insight)
+                </span>
+              </div>
             </div>
 
-            <span className={`ml-auto text-xs font-medium ${
+            <span className={`text-xs font-medium sm:ml-auto ${
               userCredits !== null && userCredits < (isPremium ? 15 : 5)
                 ? "text-rose-600"
                 : "text-slate-500"
@@ -202,7 +209,7 @@ export function AnalysisInput() {
             whileTap={{ scale: 0.98 }}
             onClick={handleAnalyze}
             disabled={!url || isAnalyzing}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px]"
           >
             {isAnalyzing ? (
               <>
