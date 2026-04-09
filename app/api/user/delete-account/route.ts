@@ -1,4 +1,4 @@
-import { createSupabaseRouteClient } from "@/lib/supabase/server";
+import { createSupabaseRouteClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -48,14 +48,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Delete auth user (requires service role key)
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (serviceRoleKey) {
-      const adminSupabase = createSupabaseRouteClient(
-        request,
-        new NextResponse()
-      ).supabase;
-
-      // Use service role to delete auth user
+    try {
+      const adminSupabase = createSupabaseServiceRoleClient();
       const { error: deleteAuthError } = await adminSupabase.auth.admin.deleteUser(
         user.id
       );
@@ -64,6 +58,9 @@ export async function POST(request: NextRequest) {
         console.error("Error deleting auth user:", deleteAuthError);
         // Continue anyway - user data is already deleted
       }
+    } catch (serviceRoleError) {
+      console.error("Service role error:", serviceRoleError);
+      // Continue - user data already deleted, auth user can be cleaned up later
     }
 
     // Sign out user

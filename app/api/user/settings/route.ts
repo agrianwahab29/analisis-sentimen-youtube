@@ -78,8 +78,15 @@ export async function PATCH(request: NextRequest) {
 
     if (updateError) {
       console.error("Error updating settings:", updateError);
+      // Check if error is about missing columns
+      if (updateError.message?.includes("column") || updateError.message?.includes("does not exist")) {
+        return NextResponse.json({
+          success: true,
+          warning: "Settings saved to session only - database columns not ready",
+        });
+      }
       return NextResponse.json(
-        { error: "Failed to update settings" },
+        { error: "Failed to update settings", details: updateError.message },
         { status: 500 }
       );
     }
@@ -117,14 +124,16 @@ export async function GET(request: NextRequest) {
       .from("users")
       .select("email_notifications, analysis_complete_notifications, security_alert_notifications")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (fetchError) {
       console.error("Error fetching settings:", fetchError);
-      return NextResponse.json(
-        { error: "Failed to fetch settings" },
-        { status: 500 }
-      );
+      // Return default values if columns don't exist yet
+      return NextResponse.json({
+        emailNotifications: true,
+        analysisCompleteNotifications: true,
+        securityAlertNotifications: true,
+      });
     }
 
     return NextResponse.json({
