@@ -237,30 +237,32 @@ function DesktopSidebar() {
 // Mobile drawer - slides in from left
 function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/60 z-50 md:hidden"
-          />
-          {/* Drawer */}
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed left-0 top-0 z-50 h-screen w-72 bg-[#0F172A] border-r border-[#1E293B] flex-col md:hidden"
-          >
-            <SidebarContent onToggle={onClose} />
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+    <TooltipProvider>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black/60 z-50 md:hidden"
+            />
+            {/* Drawer */}
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 z-50 h-screen w-72 bg-[#0F172A] border-r border-[#1E293B] flex-col md:hidden"
+            >
+              <SidebarContent onToggle={onClose} />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </TooltipProvider>
   );
 }
 
