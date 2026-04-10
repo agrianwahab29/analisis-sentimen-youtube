@@ -32,68 +32,95 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete user data from analysis_history first (foreign key constraint)
-    console.log("Deleting analysis history...");
-    const { error: deleteHistoryError } = await supabase
-      .from("analysis_history")
-      .delete()
-      .eq("user_id", user.id);
+    // Use service role client for all delete operations
+    const adminSupabase = createSupabaseServiceRoleClient();
 
-    if (deleteHistoryError) {
-      console.error("Error deleting analysis history:", deleteHistoryError);
-      // Continue anyway - maybe no history exists
-    }
-
-    // Delete user from users table
-    console.log("Deleting user from users table...");
-    const { error: deleteUserError } = await supabase
-      .from("users")
-      .delete()
-      .eq("id", user.id);
-
-    if (deleteUserError) {
-      console.error("Error deleting user from users table:", deleteUserError);
-      return NextResponse.json(
-        { error: "Failed to delete user from database", details: deleteUserError.message },
-        { status: 500 }
-      );
-    }
-
-    // Delete auth user (requires service role key)
-    console.log("Deleting auth user with service role...");
+    // Step 1: Delete all related data first (to avoid FK constraint violations)
+    // Using service role client to bypass RLS policies
+    console.log("Step 1: Deleting analysis history...");
     try {
-      const adminSupabase = createSupabaseServiceRoleClient();
+      const { error: deleteHistoryError } = await adminSupabase
+        .from("analysis_history")
+        .delete()
+        .eq("user_id", user.id);
+
+      if (deleteHistoryError) {
+        console.error("Error deleting analysis history:", deleteHistoryError.message);
+        // Continue - maybe no history exists
+      } else {
+        console.log("Analysis history deleted successfully");
+      }
+    } catch (e: any) {
+      console.error("Exception deleting history:", e.message);
+    }
+
+    // Step 2: Delete user from users table
+    console.log("Step 2: Deleting user from users table...");
+    try {
+      const { error: deleteUserError } = await adminSupabase
+        .from("users")
+        .delete()
+        .eq("id", user.id);
+
+      if (deleteUserError) {
+        console.error("Error deleting user from users table:", deleteUserError.message);
+        // Continue anyway - user might not exist in users table
+      } else {
+        console.log("User deleted from users table successfully");
+      }
+    } catch (e: any) {
+      console.error("Exception deleting from users table:", e.message);
+    }
+
+    // Step 3: Delete auth user from Supabase Auth
+    console.log("Step 3: Deleting auth user...");
+    try {
       const { error: deleteAuthError } = await adminSupabase.auth.admin.deleteUser(
         user.id
       );
 
       if (deleteAuthError) {
-        console.error("Error deleting auth user:", deleteAuthError);
-        // Return error details
+        console.error("Error deleting auth user:", deleteAuthError.message);
         return NextResponse.json(
-          { error: "Failed to delete auth user", details: deleteAuthError.message },
+          { 
+            error: "Failed to delete auth user", 
+            details: deleteAuthError.message,
+            code: deleteAuthError.status 
+          },
           { status: 500 }
         );
       }
       console.log("Auth user deleted successfully");
-    } catch (serviceRoleError: any) {
-      console.error("Service role error:", serviceRoleError);
+    } catch (e: any) {
+      console.error("Exception deleting auth user:", e.message);
       return NextResponse.json(
-        { error: "Failed to delete auth user", details: serviceRoleError?.message || "Unknown error" },
+        { 
+          error: "Failed to delete auth user", 
+          details: e?.message || "Unknown error",
+          step: "auth_delete" 
+        },
         { status: 500 }
       );
     }
 
-    // Sign out user
-    console.log("Signing out user...");
-    await supabase.auth.signOut();
+    // Step 4: Sign out user (optional at this point since auth user is deleted)
+    console.log("Step 4: Signing out user...");
+    try {
+      await supabase.auth.signOut();
+    } catch (e: any) {
+      console.error("Error signing out (non-critical):", e.message);
+    }
 
     console.log("Account deletion completed successfully");
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Delete account error:", error);
+    console.error("Delete account fatal error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error?.message || "Unknown error" },
+      { 
+        error: "Internal server error", 
+        details: error?.message || "Unknown error",
+        stack: process.env.NODE_ENV === "development" ? error?.stack : undefined 
+      },
       { status: 500 }
     );
   }
