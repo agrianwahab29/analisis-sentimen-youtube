@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Deleting account for user:", user.id);
+    console.log("Soft deleting account for user:", user.id, "email:", user.email);
 
     // Check if service role key is available
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -32,12 +32,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use service role client for all delete operations
     const adminSupabase = createSupabaseServiceRoleClient();
 
-    // Step 1: Delete all related data first (to avoid FK constraint violations)
-    // Using service role client to bypass RLS policies
-    console.log("Step 1: Deleting analysis history...");
+    // Step 1: SOFT DELETE - Update user record instead of deleting
+    // This preserves the record for anti-farming tracking
+    console.log("Step 1: Soft deleting user record...");
+    try {
+      const { error: softDeleteError } = await adminSupabase
+        .from("users")
+        .update({
+          deleted_at: new Date().toISOString(),
+          status: "deleted",
+          credit_balance: 0,  // Reset kredit
+          email: `deleted_${user.id}_${Date.now()}@deleted.vidsense.ai`,  // Mask email
+          original_email: user.email,  // Keep original for tracking
+        })
+        .eq("id", user.id);
+
+      if (softDeleteError) {
+        console.error("Error soft deleting user:", softDeleteError.message);
+        // Continue - might not exist in users table
+      } else {
+        console.log("User soft deleted successfully");
+      }
+    } catch (e: any) {
+      console.error("Exception soft deleting user:", e.message);
+    }
+
+    // Step 2: Update email registry to mark this email as deleted
+    console.log("Step 2: Updating email registry...");
+    try {
+      const { error: registryError } = await adminSupabase
+        .from("email_registry")
+        .upsert({
+          email: user.email!,
+          last_deleted_at: new Date().toISOString(),
+          total_deletions: adminSupabase.rpc("increment_deletion_count", { user_email: user.email }),
+        }, {
+          onConflict: "email"
+        });
+
+      if (registryError) {
+        console.error("Error updating email registry:", registryError.message);
+      } else {
+        console.log("Email registry updated");
+      }
+    } catch (e: any) {
+      console.error("Exception updating email registry:", e.message);
+      // Fallback: insert/update manual
+      try {
+        await adminSupabase.rpc("update_email_registry_on_delete", {
+          p_email: user.email,
+          p_deleted_at: new Date().toISOString(),
+        });
+      } catch (rpcError: any) {
+        console.error("RPC fallback also failed:", rpcError.message);
+      }
+    }
+
+    // Step 3: Delete analysis history (hard delete - no need to keep)
+    console.log("Step 3: Deleting analysis history...");
     try {
       const { error: deleteHistoryError } = await adminSupabase
         .from("analysis_history")
@@ -46,34 +100,13 @@ export async function POST(request: NextRequest) {
 
       if (deleteHistoryError) {
         console.error("Error deleting analysis history:", deleteHistoryError.message);
-        // Continue - maybe no history exists
-      } else {
-        console.log("Analysis history deleted successfully");
       }
     } catch (e: any) {
       console.error("Exception deleting history:", e.message);
     }
 
-    // Step 2: Delete user from users table
-    console.log("Step 2: Deleting user from users table...");
-    try {
-      const { error: deleteUserError } = await adminSupabase
-        .from("users")
-        .delete()
-        .eq("id", user.id);
-
-      if (deleteUserError) {
-        console.error("Error deleting user from users table:", deleteUserError.message);
-        // Continue anyway - user might not exist in users table
-      } else {
-        console.log("User deleted from users table successfully");
-      }
-    } catch (e: any) {
-      console.error("Exception deleting from users table:", e.message);
-    }
-
-    // Step 3: Delete auth user from Supabase Auth
-    console.log("Step 3: Deleting auth user...");
+    // Step 4: Delete auth user from Supabase Auth
+    console.log("Step 4: Deleting auth user...");
     try {
       const { error: deleteAuthError } = await adminSupabase.auth.admin.deleteUser(
         user.id
@@ -85,7 +118,7 @@ export async function POST(request: NextRequest) {
           { 
             error: "Failed to delete auth user", 
             details: deleteAuthError.message,
-            code: deleteAuthError.status 
+            step: "auth_delete"
           },
           { status: 500 }
         );
@@ -103,23 +136,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 4: Sign out user (optional at this point since auth user is deleted)
-    console.log("Step 4: Signing out user...");
+    // Step 5: Sign out user
+    console.log("Step 5: Signing out user...");
     try {
       await supabase.auth.signOut();
     } catch (e: any) {
       console.error("Error signing out (non-critical):", e.message);
     }
 
-    console.log("Account deletion completed successfully");
-    return NextResponse.json({ success: true });
+    console.log("Account soft deletion completed successfully");
+    return NextResponse.json({ 
+      success: true, 
+      message: "Akun dihapus. Jika mendaftar lagi, kredit gratis tidak akan diberikan lagi." 
+    });
   } catch (error: any) {
     console.error("Delete account fatal error:", error);
     return NextResponse.json(
       { 
         error: "Internal server error", 
-        details: error?.message || "Unknown error",
-        stack: process.env.NODE_ENV === "development" ? error?.stack : undefined 
+        details: error?.message || "Unknown error"
       },
       { status: 500 }
     );
